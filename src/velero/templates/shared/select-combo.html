@@ -1,0 +1,10 @@
+{% block select_service %}
+<select id="select_grant_type" class="custom-select-header">
+    <option {% if flow == "authorize" %}selected{% endif %} value="/authorize">Authorization Flow</option>
+    {% if flow == "callback" %}<option selected value="/callback">Callback</option>{% endif %}
+    <option {% if flow == "password" %}selected{% endif %} value="/password">Password Flow</option>
+    <option {% if flow == "client" %}selected{% endif %} value="/client">Client Credentials Flow</option>
+    <option {% if flow == "refresh" %}selected{% endif %} value="/refresh">Refresh Token</option>
+    <option {% if flow == "revoke" %}selected{% endif %} value="/revoke">Revoke Token</option>
+</select>
+{% endblock %}

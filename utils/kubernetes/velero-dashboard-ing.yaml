@@ -1,0 +1,17 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  name: velero-dashboard-ing
+  namespace: velero
+spec:
+  rules:
+    - host: velero.exeample.com
+      http:
+        paths:
+          - backend:
+              serviceName: velero-dashboard
+              servicePort: 80
+            path: /

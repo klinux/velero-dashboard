@@ -1,0 +1,16 @@
+{% block modal_confirm %}
+<div id="confirm-delete" class="modal modal-blur fade" id="modal-small" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="modal-title">Are you sure?</div>
+                <div>If you proceed, you will delete this backup definition.</div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-canel" type="button" class="btn btn-link link-secondary mr-auto" data-dismiss="modal">Cancel</button>
+                <button id="confirm-accept" type="button" class="btn btn-danger" data-dismiss="modal">Yes, delete this backup</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

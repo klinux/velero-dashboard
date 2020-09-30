@@ -1,0 +1,14 @@
+version: "3"
+
+services:
+  velero:
+    image: velero-dashboard
+    environment:
+      DEBUG: "true"
+    volumes:
+      - ../../src:/app:ro
+      - /tmp/minikube/:/tmp/minikube/:ro
+    entrypoint: python /app/run.py
+    ports:
+      - 8080:8080
+    network_mode: bridge
