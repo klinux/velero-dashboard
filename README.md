@@ -1,5 +1,8 @@
 # Velero Dashboard
 
+## Images
+![Dashboard](https://github.com/klinux/velero-dashboard/blob/master/images/dashboard.png)
+
 ## Configuration
 > Please, open **Makefile** and review all variables, and set it to your enviroment.
 
