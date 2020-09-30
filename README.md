@@ -30,7 +30,7 @@ make stop
 ## Dependencies
 
 ### Minikube
-To develop minikube is necessary, this readme will not cover the minikube instalation, you need to provide minikub environment.
+To develop minikube is necessary, this readme will not cover the minikube instalation.
 
 ### Velero
 
