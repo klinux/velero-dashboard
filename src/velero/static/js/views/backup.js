@@ -23,6 +23,22 @@ $(document).ready(function () {
         }
     });
 
+    $tags_ids = ["#exclude-namespaces", "#include-namespaces", "#exclude-resources", "#include-resources"]
+
+    for (names in $tags_ids) {
+        $($tags_ids[names]).selectize({
+            delimiter: ",",
+            persist: true,
+            create: function (input) {
+                return {
+                    value: input,
+                    text: input
+                }
+            },
+            plugins: ["remove_button", "restore_on_backspace"],
+        });
+    }
+
 });
 
 /*

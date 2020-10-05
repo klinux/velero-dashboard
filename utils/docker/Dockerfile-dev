@@ -2,7 +2,7 @@ FROM python:alpine3.11 as dev
 
 WORKDIR /app
 
-COPY ./src/ /app/ 
+COPY ./src/ /app/
 
 RUN adduser \
     --disabled-password \
@@ -12,10 +12,10 @@ RUN adduser \
     "app" \
     && apk update \
     && apk upgrade \
-    && apk add bash curl
-
-COPY ./utils/config /tmp/config
-
+    && apk add bash curl \
+    && mkdir -p /app/.kube \
+    && chown -R app: /app/.kube
+    
 COPY ./src/requirements_dev.txt /app/requirements.txt
 
 RUN curl -LO https://github.com/vmware-tanzu/velero/releases/download/v1.5.1/velero-v1.5.1-linux-amd64.tar.gz \
@@ -24,9 +24,7 @@ RUN curl -LO https://github.com/vmware-tanzu/velero/releases/download/v1.5.1/vel
     && rm -rf velero-v1.5.1-linux-amd64* \
     && chmod 755 /usr/local/bin/velero
 
-RUN pip install --upgrade pip && pip install -r /app/requirements.txt && chown app: /tmp/config
-
-COPY ./src/ /app/
+RUN pip install --upgrade pip && pip install -r /app/requirements.txt 
 
 USER app
 

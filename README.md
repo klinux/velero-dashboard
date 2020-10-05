@@ -3,6 +3,8 @@
 ## Images
 ![Dashboard](https://github.com/klinux/velero-dashboard/blob/master/images/dashboard.png)
 
+![Dashboard](https://github.com/klinux/velero-dashboard/blob/master/images/backup_create.png)
+
 ![Backup](https://github.com/klinux/velero-dashboard/blob/master/images/backup.png)
 
 ![BackupActios](https://github.com/klinux/velero-dashboard/blob/master/images/backup_actions.png)

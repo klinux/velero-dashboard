@@ -24,12 +24,12 @@ def velero(cmd):
     """
     Objetive: Run velero and get output json
     """
-    run = os.popen(f"/usr/local/bin/velero {cmd} -o json --kubeconfig=/tmp/config")
+    run = os.popen(f"/usr/local/bin/velero {cmd} -o json")
     return json.loads(run.read())
 
 def velero_str(cmd):
     """
     Objetive: Run velero and get output text
     """
-    run = os.popen(f"/usr/local/bin/velero {cmd} --kubeconfig=/tmp/config")
+    run = os.popen(f"/usr/local/bin/velero {cmd}")
     return run.read()

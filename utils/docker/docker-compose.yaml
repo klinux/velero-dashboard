@@ -5,7 +5,9 @@ services:
     image: velero-dashboard
     environment:
       DEBUG: "true"
+      KUBECONFIG: "/tmp/.kube/config"
     volumes:
+      - ../config:/tmp/.kube/config:ro
       - ../../src:/app:ro
       - /tmp/minikube/:/tmp/minikube/:ro
     entrypoint: python /app/run.py

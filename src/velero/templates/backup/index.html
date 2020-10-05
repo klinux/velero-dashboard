@@ -1,6 +1,8 @@
 {% extends "layout.html" %} {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dataTables.min.css') }}" crossorigin="anonymous" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/tabler_datatable.css') }}" crossorigin="anonymous" />
+<link rel="stylesheet" href="{{ url_for('static', filename='libs/selectize/dist/css/selectize.css') }}"
+    crossorigin="anonymous" />
 <style>
     #logs {
         height: 900px;
@@ -25,7 +27,7 @@
         </div>
     </div>
     <div class="float-right">
-        <a href="#" class="btn btn-outline-dark active float-right">
+        <a href="#" class="btn btn-outline-dark active float-right" data-toggle="modal" data-target="#modal-create">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-md" width="24" height="24" viewBox="0 0 24 24"
                 stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z"></path>
@@ -131,8 +133,10 @@
 {% include "backup/modal_confirm.html" %}
 {% include "backup/modal_describe.html" %}
 {% include "backup/modal_logs.html" %}
+{% include "backup/modal_create.html" %}
 {% endblock %} {% block javascript %}
 <script src="{{ url_for('static', filename='js/jquery.dataTables.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dataTables.bootstrap4.min.js') }}"></script>
+<script src="{{ url_for('static', filename='libs/selectize/dist/js/standalone/selectize.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/views/backup.js') }}"></script>
-{% endblock %}⏎
+{% endblock %}

@@ -32,6 +32,7 @@ minikube: ## Run minikube cluster
 	export KUBECONFIG=${KUBECONFIG}; export MINIKUBE_HOME=${MINIKUBE_HOME}; minikube start --cni=bridge
 	docker stop minio || true && docker rm -f minio || true
 	docker run --name minio -d -p 9000:9000 -e "MINIO_ACCESS_KEY=minioadmin" -e "MINIO_SECRET_KEY=minioadmin" -v /tmp/data:/data minio/minio server /data
+	sleep 5
 	docker run --entrypoint="" minio/mc /bin/sh -c "/usr/bin/mc config host add server http://${IP}:9000 minioadmin minioadmin; /usr/bin/mc mb server/velero; exit 0;"
 	velero install --provider aws --use-restic --plugins velero/velero-plugin-for-aws --bucket velero --secret-file ./utils/minio.credentials --backup-location-config region=minio,s3ForcePathStyle=true,s3Url=http://${IP}:9000 --kubeconfig ${KUBECONFIG}
 	export KUBECONFIG=${KUBECONFIG}; kubectl create ns namespace1 || true
@@ -45,4 +46,5 @@ ministop: ## Stop minikube
 	docker stop minio || true && docker rm -f minio || true
 
 miniclean: ## Clean minikube installation
+	export KUBECONFIG=${KUBECONFIG}; export MINIKUBE_HOME=${MINIKUBE_HOME}; minikube stop
 	export KUBECONFIG=${KUBECONFIG}; export MINIKUBE_HOME=${MINIKUBE_HOME}; minikube delete

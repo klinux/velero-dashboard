@@ -1,0 +1,165 @@
+{% block modal_create %}
+<div class="modal modal-blur fade" id="modal-create" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">New Backup</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+                        stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" />
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" /></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Backup Name</label>
+                    <input type="text" class="form-control" id="name" name="name"
+                        placeholder="Ex.: namespace-2020-03-22">
+                </div>
+                <label class="form-label">Backup Type</label>
+                <div class="form-selectgroup-boxes row mb-3">
+                    <div class="col-lg-6">
+                        <label class="form-selectgroup-item">
+                            <input type="radio" name="backup-type" id="backup-type" value="1"
+                                class="form-selectgroup-input" checked>
+                            <span class="form-selectgroup-label d-flex align-items-center p-3">
+                                <span class="mr-3">
+                                    <span class="form-selectgroup-check"></span>
+                                </span>
+                                <span class="form-selectgroup-label-content">
+                                    <span class="form-selectgroup-title strong mb-1">Normal</span>
+                                    <span class="d-block text-muted">Defined backup configuration</span>
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+                    <div class="col-lg-6">
+                        <label class="form-selectgroup-item">
+                            <input type="radio" name="backup-type" id="backup-type" value="2"
+                                class="form-selectgroup-input">
+                            <span class="form-selectgroup-label d-flex align-items-center p-3">
+                                <span class="mr-3">
+                                    <span class="form-selectgroup-check"></span>
+                                </span>
+                                <span class="form-selectgroup-label-content">
+                                    <span class="form-selectgroup-title strong mb-1">From Schedule</span>
+                                    <span class="d-block text-muted">Create backup from defined schedule</span>
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="mb-3">
+                            <label class="form-label">Include Namespaces</label>
+                            <input type="text" id="include-namespaces" name="include-namespaces">
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="mb-3">
+                            <label class="form-label">Include Resources</label>
+                            <input type="text" id="include-resources" name="include-resources">
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="mb-3">
+                            <label class="form-label">Exclude Namespaces</label>
+                            <input type="text" id="exclude-namespaces" name="exclude-namespaces">
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="mb-3">
+                            <label class="form-label">Exclude Resources</label>
+                            <input type="text" id="exclude-resources" name="exclude-resources">
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="mb-3">
+                            <label class="form-label">Backup Retention</label>
+                            <select class="form-select" id="backup-retention" name="backup-retention">
+                                <option value="30" selected>30 days</option>
+                                <option value="15">15 days</option>
+                                <option value="10">10 days</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-lg-8">
+                        <div class="mb-3">
+                            <div class="form-label">Settings</div>
+                            <label class="form-check form-switch">
+                                <input name="snapshot-volume" id="snapshot-volume" class="form-check-input"
+                                    type="checkbox" checked="1">
+                                <span class="form-check-label">Snapshot Volumes?</span>
+                            </label>
+                            <label class="form-check form-switch">
+                                <input name="include-cluster-resource" id="include-cluster-resource"
+                                    class="form-check-input" type="checkbox" checked="1">
+                                <span class="form-check-label">Include Cluster Resource?</span>
+                            </label>
+                            <label class="form-check form-switch">
+                                <input name="default-volume-restic" id="default-volume-restic" class="form-check-input"
+                                    type="checkbox" checked="1">
+                                <span class="form-check-label">Default Volume to Restic?</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="mb-3">
+                            <label class="form-label">Backup Labels</label>
+                            <input id="backup-labels" name="backup-labels" type="text" class="form-control">
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="mb-3">
+                            <label class="form-label">Use Selector</label>
+                            <input type="text" id="backup-selector" name="backup-selector" class="form-control">
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="mb-3">
+                            <div class="form-label">Backup Location</div>
+                            <select class="form-select" id="backup-location" name="backup-location">
+                                <option value="default">default</option>
+                                <option value="aws">AWS</option>
+                                <option value="gcp">GCP</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="mb-3">
+                            <div class="form-label">Snapshot Location</div>
+                            <select class="form-select" id="snapshot-location" name="snapshot-location">
+                                <option value="default">default</option>
+                                <option value="aws">AWS</option>
+                                <option value="gcp">GCP</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="#" class="btn btn-link link-secondary" data-dismiss="modal">
+                    Cancel
+                </a>
+                <a href="#" class="btn btn-primary ml-auto" data-dismiss="modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+                        stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" />
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" /></svg>
+                    Create Backup
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
