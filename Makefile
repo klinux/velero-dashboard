@@ -2,9 +2,10 @@ IMG="klinux/velero-dashboard"
 VERSION="0.0.1"
 DOCKER_DIR="utils/docker"
 DEV="velero-dashboard"
-IP=192.168.1.78
+IP=192.168.0.146
 KUBECONFIG="${PWD}/utils/config"
 MINIKUBE_HOME="/tmp/minikube"
+KUBERNETES_VERSION="v1.19.0"
 
 .PHONY: help
 help:
@@ -29,7 +30,7 @@ kube: ## Depploy velero dashboard
 	kubectl apply -f utils/kubernetes -n velero
 
 minikube: ## Run minikube cluster
-	export KUBECONFIG=${KUBECONFIG}; export MINIKUBE_HOME=${MINIKUBE_HOME}; minikube start --cni=bridge
+	export KUBECONFIG=${KUBECONFIG}; export MINIKUBE_HOME=${MINIKUBE_HOME}; minikube start --cni=bridge --kubernetes-version=${KUBERNETES_VERSION}
 	docker stop minio || true && docker rm -f minio || true
 	docker run --name minio -d -p 9000:9000 -e "MINIO_ACCESS_KEY=minioadmin" -e "MINIO_SECRET_KEY=minioadmin" -v /tmp/data:/data minio/minio server /data
 	sleep 5
