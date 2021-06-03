@@ -15,6 +15,7 @@ spec:
       labels:
         app: velero-dashboard
     spec:
+      serviceAccount: velero
       containers:
         - name: velero-dashboard
           image: klinux/velero-dashboard:latest
