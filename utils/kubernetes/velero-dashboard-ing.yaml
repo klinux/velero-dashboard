@@ -12,6 +12,6 @@ spec:
       http:
         paths:
           - backend:
-              serviceName: velero-dashboard
-              servicePort: 80
+              serviceName: velero-dashboard-svc
+              servicePort: 8080
             path: /
