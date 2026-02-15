@@ -22,6 +22,7 @@ type BackupResponse struct {
 	Labels              map[string]string `json:"labels,omitempty"`
 	ItemsBackedUp       int64             `json:"itemsBackedUp"`
 	TotalItems          int64             `json:"totalItems"`
+	SizeBytes           int64             `json:"sizeBytes,omitempty"`
 	SnapshotVolumes     *bool             `json:"snapshotVolumes,omitempty"`
 	DefaultVolumesToFS  *bool             `json:"defaultVolumesToFsBackup,omitempty"`
 }
@@ -191,4 +192,44 @@ type WSEvent struct {
 	Type     string      `json:"type"`     // "backup", "restore", "schedule", "bsl"
 	Action   string      `json:"action"`   // "added", "modified", "deleted"
 	Resource interface{} `json:"resource"` // The DTO
+}
+
+// BackupComparisonResponse is the DTO returned when comparing two backups.
+type BackupComparisonResponse struct {
+	Backup1 BackupSummary `json:"backup1"`
+	Backup2 BackupSummary `json:"backup2"`
+	Diff    BackupDiff    `json:"diff"`
+}
+
+// BackupSummary is a simplified backup info for comparison.
+type BackupSummary struct {
+	Name               string   `json:"name"`
+	Phase              string   `json:"phase"`
+	Created            string   `json:"created"`
+	ItemsBackedUp      int64    `json:"itemsBackedUp"`
+	TotalItems         int64    `json:"totalItems"`
+	Errors             int64    `json:"errors"`
+	Warnings           int64    `json:"warnings"`
+	SizeBytes          int64    `json:"sizeBytes"`
+	StorageLocation    string   `json:"storageLocation"`
+	IncludedNamespaces []string `json:"includedNamespaces"`
+	ExcludedNamespaces []string `json:"excludedNamespaces"`
+	IncludedResources  []string `json:"includedResources"`
+	ExcludedResources  []string `json:"excludedResources"`
+	TTL                string   `json:"ttl"`
+}
+
+// BackupDiff contains the differences between two backups.
+type BackupDiff struct {
+	ItemsDiff             int64    `json:"itemsDiff"`
+	ErrorsDiff            int64    `json:"errorsDiff"`
+	WarningsDiff          int64    `json:"warningsDiff"`
+	SizeDiff              int64    `json:"sizeDiff"`
+	AddedNamespaces       []string `json:"addedNamespaces"`
+	RemovedNamespaces     []string `json:"removedNamespaces"`
+	AddedResources        []string `json:"addedResources"`
+	RemovedResources      []string `json:"removedResources"`
+	SameConfiguration     bool     `json:"sameConfiguration"`
+	StorageLocationDiff   bool     `json:"storageLocationDiff"`
+	TTLDiff               bool     `json:"ttlDiff"`
 }

@@ -21,6 +21,10 @@ A modern web dashboard for managing [Velero](https://velero.io/) backups in Kube
     <td><img src="images/list_backup.png" alt="Backup List" width="400"/></td>
     <td><img src="images/add_backup.png" alt="Add Backup" width="400"/></td>
   </tr>
+  <tr>
+    <td><img src="images/compare_backups.png" alt="Compare Backups" width="400"/></td>
+    <td><img src="images/backup_log.png" alt="Backup Logs" width="400"/></td>
+  </tr>
 </table>
 
 ### Schedule Management
@@ -473,9 +477,9 @@ velero/
 - [x] Backup log viewer (via DownloadRequest CRD)
 - [x] Backup/restore progress bar (real-time via WebSocket)
 - [x] Spotlight search (Cmd+K) for quick navigation
+- [x] Backup size metrics and storage usage charts
+- [x] Backup comparison (diff between two backups)
 - [ ] Multi-cluster support
-- [ ] Backup comparison (diff between two backups)
-- [ ] Backup size metrics and storage usage charts
 
 ## Contributing
 

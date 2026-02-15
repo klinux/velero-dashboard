@@ -1,6 +1,6 @@
 "use client";
 
-import { Title, Stack, Group, Button } from "@mantine/core";
+import { Title, Stack, Group, Button, Badge, Select, Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconPlus } from "@tabler/icons-react";
@@ -9,6 +9,7 @@ import { BackupTable } from "@/components/backup-table";
 import { TableSearchInput } from "@/components/table-search-input";
 import { ConfirmDelete } from "@/components/confirm-delete";
 import { LogViewerModal } from "@/components/log-viewer-modal";
+import { CompareBackupsModal } from "@/components/compare-backups-modal";
 import { useBackups, useDeleteBackup } from "@/hooks/use-backups";
 import { useCreateRestore } from "@/hooks/use-restores";
 import { useTableSearch } from "@/hooks/use-table-search";
@@ -24,6 +25,10 @@ export default function BackupsPage() {
   const [deleteOpened, { open: openDelete, close: closeDelete }] = useDisclosure(false);
   const [logsTarget, setLogsTarget] = useState<string>("");
   const [logsOpened, { open: openLogs, close: closeLogs }] = useDisclosure(false);
+  const [backup1, setBackup1] = useState<string>("");
+  const [backup2, setBackup2] = useState<string>("");
+  const [compareOpened, { open: openCompare, close: closeCompare }] = useDisclosure(false);
+  const [showComparison, setShowComparison] = useState(false);
 
   const {
     search,
@@ -93,15 +98,29 @@ export default function BackupsPage() {
     openLogs();
   };
 
+  const handleStartComparison = () => {
+    if (backup1 && backup2) {
+      setShowComparison(true);
+      closeCompare();
+    }
+  };
+
+  const backupOptions = (backups || []).map((b) => ({ value: b.name, label: b.name }));
+
   return (
     <Stack gap="lg">
       <Group justify="space-between">
         <Title order={2}>Backups</Title>
-        {hasRole(role, "operator") && (
-          <Button component={Link} href="/backups/create" leftSection={<IconPlus size={16} />}>
-            Create Backup
+        <Group>
+          <Button variant="light" onClick={openCompare} disabled={!backups || backups.length < 2}>
+            Compare Backups
           </Button>
-        )}
+          {hasRole(role, "operator") && (
+            <Button component={Link} href="/backups/create" leftSection={<IconPlus size={16} />}>
+              Create Backup
+            </Button>
+          )}
+        </Group>
       </Group>
 
       <TableSearchInput
@@ -137,6 +156,40 @@ export default function BackupsPage() {
         onClose={closeLogs}
         backupName={logsTarget}
       />
+
+      <Modal opened={compareOpened} onClose={closeCompare} title="Select Backups to Compare" centered>
+        <Stack gap="md">
+          <Select
+            label="First Backup"
+            placeholder="Select first backup"
+            data={backupOptions}
+            value={backup1}
+            onChange={(value) => setBackup1(value || "")}
+            searchable
+          />
+          <Select
+            label="Second Backup"
+            placeholder="Select second backup"
+            data={backupOptions.filter((opt) => opt.value !== backup1)}
+            value={backup2}
+            onChange={(value) => setBackup2(value || "")}
+            searchable
+            disabled={!backup1}
+          />
+          <Button onClick={handleStartComparison} disabled={!backup1 || !backup2} fullWidth>
+            Compare
+          </Button>
+        </Stack>
+      </Modal>
+
+      {showComparison && backup1 && backup2 && (
+        <CompareBackupsModal
+          opened={showComparison}
+          onClose={() => setShowComparison(false)}
+          backup1Name={backup1}
+          backup2Name={backup2}
+        />
+      )}
     </Stack>
   );
 }

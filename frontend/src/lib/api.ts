@@ -104,6 +104,9 @@ export const getBackupLogs = async (name: string): Promise<string> => {
   return res.text();
 };
 
+export const compareBackups = (backup1: string, backup2: string) =>
+  fetchJSON<import("./types").BackupComparisonResponse>(`/backups/compare?backup1=${encodeURIComponent(backup1)}&backup2=${encodeURIComponent(backup2)}`);
+
 // Restores
 export const listRestores = () => fetchJSON<Restore[]>("/restores");
 export const getRestore = (name: string) => fetchJSON<Restore>(`/restores/${name}`);

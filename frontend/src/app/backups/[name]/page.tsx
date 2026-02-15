@@ -20,7 +20,7 @@ import { useParams } from "next/navigation";
 import { useBackup } from "@/hooks/use-backups";
 import { StatusBadge } from "@/components/status-badge";
 import { LogViewerModal } from "@/components/log-viewer-modal";
-import { formatDate, formatDuration } from "@/lib/utils";
+import { formatDate, formatDuration, formatBytes } from "@/lib/utils";
 
 export default function BackupDetailPage() {
   const params = useParams();
@@ -89,6 +89,10 @@ export default function BackupDetailPage() {
                 <Table.Tr>
                   <Table.Td fw={500}>TTL</Table.Td>
                   <Table.Td>{backup.ttl || "-"}</Table.Td>
+                </Table.Tr>
+                <Table.Tr>
+                  <Table.Td fw={500}>Size</Table.Td>
+                  <Table.Td>{formatBytes(backup.sizeBytes)}</Table.Td>
                 </Table.Tr>
                 <Table.Tr>
                   <Table.Td fw={500}>Created</Table.Td>

@@ -17,7 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getDashboardStats, listBackups, listSchedules } from "@/lib/api";
 import { StatsCards } from "@/components/stats-cards";
 import { StatusBadge } from "@/components/status-badge";
-import { timeAgo } from "@/lib/utils";
+import { timeAgo, formatBytes } from "@/lib/utils";
 import {
   IconCircleFilled,
   IconCalendarEvent,
@@ -95,6 +95,11 @@ export default function DashboardPage() {
       : 0;
 
   const inProgressPct = Math.max(0, 100 - completedPct - failedPct);
+
+  // Calculate total storage usage
+  const totalStorageBytes = (backups || []).reduce((sum, backup) => {
+    return sum + (backup.sizeBytes || 0);
+  }, 0);
 
   const activityData = buildActivityData(backups || []);
 
@@ -185,6 +190,45 @@ export default function DashboardPage() {
                   Other
                 </Text>
               </Group>
+            </Group>
+          </Paper>
+        </Grid.Col>
+
+        <Grid.Col span={{ base: 12 }}>
+          <Paper p="md">
+            <Group justify="space-between" mb="md">
+              <Text fw={600}>Storage Usage</Text>
+              <Text size="xs" c="dimmed">
+                Total backup size (estimated)
+              </Text>
+            </Group>
+            <Group gap="xl">
+              <div>
+                <Text size="xs" c="dimmed" mb={4}>
+                  Total Size
+                </Text>
+                <Text size="xl" fw={700}>
+                  {formatBytes(totalStorageBytes)}
+                </Text>
+              </div>
+              <div>
+                <Text size="xs" c="dimmed" mb={4}>
+                  Total Backups
+                </Text>
+                <Text size="xl" fw={700}>
+                  {stats?.totalBackups || 0}
+                </Text>
+              </div>
+              {stats && stats.totalBackups > 0 && (
+                <div>
+                  <Text size="xs" c="dimmed" mb={4}>
+                    Avg per Backup
+                  </Text>
+                  <Text size="xl" fw={700}>
+                    {formatBytes(Math.round(totalStorageBytes / (stats.totalBackups || 1)))}
+                  </Text>
+                </div>
+              )}
             </Group>
           </Paper>
         </Grid.Col>

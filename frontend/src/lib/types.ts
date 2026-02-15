@@ -17,6 +17,7 @@ export interface Backup {
   labels?: Record<string, string>;
   itemsBackedUp: number;
   totalItems: number;
+  sizeBytes?: number;
   snapshotVolumes?: boolean;
   defaultVolumesToFsBackup?: boolean;
 }
@@ -173,4 +174,41 @@ export interface WSEvent {
   type: "backup" | "restore" | "schedule" | "bsl";
   action: "added" | "modified" | "deleted";
   resource: Backup | Restore | Schedule | BackupStorageLocation;
+}
+
+export interface BackupComparisonResponse {
+  backup1: BackupSummary;
+  backup2: BackupSummary;
+  diff: BackupDiff;
+}
+
+export interface BackupSummary {
+  name: string;
+  phase: string;
+  created: string;
+  itemsBackedUp: number;
+  totalItems: number;
+  errors: number;
+  warnings: number;
+  sizeBytes: number;
+  storageLocation: string;
+  includedNamespaces: string[];
+  excludedNamespaces: string[];
+  includedResources: string[];
+  excludedResources: string[];
+  ttl: string;
+}
+
+export interface BackupDiff {
+  itemsDiff: number;
+  errorsDiff: number;
+  warningsDiff: number;
+  sizeDiff: number;
+  addedNamespaces: string[];
+  removedNamespaces: string[];
+  addedResources: string[];
+  removedResources: string[];
+  sameConfiguration: boolean;
+  storageLocationDiff: boolean;
+  ttlDiff: boolean;
 }

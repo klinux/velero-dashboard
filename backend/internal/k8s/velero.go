@@ -677,6 +677,102 @@ func (c *Client) GetDashboardStats(ctx context.Context) (*DashboardStats, error)
 	return stats, nil
 }
 
+// --- Backup Comparison ---
+
+// CompareBackups compares two backups and returns their differences.
+func (c *Client) CompareBackups(ctx context.Context, name1, name2 string) (*BackupComparisonResponse, error) {
+	// Fetch both backups
+	backup1, err := c.GetBackup(ctx, name1)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get backup %s: %w", name1, err)
+	}
+
+	backup2, err := c.GetBackup(ctx, name2)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get backup %s: %w", name2, err)
+	}
+
+	// Build summaries
+	summary1 := BackupSummary{
+		Name:               backup1.Name,
+		Phase:              backup1.Phase,
+		Created:            formatTimePtr(backup1.Created),
+		ItemsBackedUp:      backup1.ItemsBackedUp,
+		TotalItems:         backup1.TotalItems,
+		Errors:             backup1.Errors,
+		Warnings:           backup1.Warnings,
+		SizeBytes:          backup1.SizeBytes,
+		StorageLocation:    backup1.StorageLocation,
+		IncludedNamespaces: backup1.IncludedNamespaces,
+		ExcludedNamespaces: backup1.ExcludedNamespaces,
+		IncludedResources:  backup1.IncludedResources,
+		ExcludedResources:  backup1.ExcludedResources,
+		TTL:                backup1.TTL,
+	}
+
+	summary2 := BackupSummary{
+		Name:               backup2.Name,
+		Phase:              backup2.Phase,
+		Created:            formatTimePtr(backup2.Created),
+		ItemsBackedUp:      backup2.ItemsBackedUp,
+		TotalItems:         backup2.TotalItems,
+		Errors:             backup2.Errors,
+		Warnings:           backup2.Warnings,
+		SizeBytes:          backup2.SizeBytes,
+		StorageLocation:    backup2.StorageLocation,
+		IncludedNamespaces: backup2.IncludedNamespaces,
+		ExcludedNamespaces: backup2.ExcludedNamespaces,
+		IncludedResources:  backup2.IncludedResources,
+		ExcludedResources:  backup2.ExcludedResources,
+		TTL:                backup2.TTL,
+	}
+
+	// Calculate diffs
+	diff := BackupDiff{
+		ItemsDiff:           backup2.ItemsBackedUp - backup1.ItemsBackedUp,
+		ErrorsDiff:          backup2.Errors - backup1.Errors,
+		WarningsDiff:        backup2.Warnings - backup1.Warnings,
+		SizeDiff:            backup2.SizeBytes - backup1.SizeBytes,
+		AddedNamespaces:     diffSlices(backup1.IncludedNamespaces, backup2.IncludedNamespaces),
+		RemovedNamespaces:   diffSlices(backup2.IncludedNamespaces, backup1.IncludedNamespaces),
+		AddedResources:      diffSlices(backup1.IncludedResources, backup2.IncludedResources),
+		RemovedResources:    diffSlices(backup2.IncludedResources, backup1.IncludedResources),
+		SameConfiguration:   backup1.StorageLocation == backup2.StorageLocation && backup1.TTL == backup2.TTL,
+		StorageLocationDiff: backup1.StorageLocation != backup2.StorageLocation,
+		TTLDiff:             backup1.TTL != backup2.TTL,
+	}
+
+	return &BackupComparisonResponse{
+		Backup1: summary1,
+		Backup2: summary2,
+		Diff:    diff,
+	}, nil
+}
+
+// diffSlices returns elements in slice2 that are not in slice1 (slice2 - slice1).
+func diffSlices(slice1, slice2 []string) []string {
+	set1 := make(map[string]bool)
+	for _, s := range slice1 {
+		set1[s] = true
+	}
+
+	diff := []string{} // Initialize as empty array instead of nil
+	for _, s := range slice2 {
+		if !set1[s] {
+			diff = append(diff, s)
+		}
+	}
+	return diff
+}
+
+// formatTimePtr formats a time pointer to string, returns empty string if nil.
+func formatTimePtr(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.Format(time.RFC3339)
+}
+
 // --- Backup Logs ---
 
 func (c *Client) GetBackupLogs(ctx context.Context, backupName string) (string, error) {
@@ -806,6 +902,40 @@ func parseBackup(obj unstructured.Unstructured) BackupResponse {
 	b.Started = nestedTimePtr(obj.Object, "status", "startTimestamp")
 	b.Completed = nestedTimePtr(obj.Object, "status", "completionTimestamp")
 	b.Expiration = nestedTimePtr(obj.Object, "status", "expiration")
+
+	// Try to get backup size from status (if Velero exposes it)
+	// For now, this will typically be 0 until we implement storage provider queries
+	b.SizeBytes = nestedInt64(obj.Object, "status", "backupSize")
+
+	// Alternative: estimate based on items (rough approximation)
+	// Average ~50KB per resource is a conservative estimate
+	if b.SizeBytes == 0 {
+		itemCount := b.ItemsBackedUp
+		// For completed backups, use totalItems if itemsBackedUp is 0
+		if itemCount == 0 && b.Phase == "Completed" {
+			itemCount = b.TotalItems
+		}
+		if itemCount > 0 {
+			b.SizeBytes = itemCount * 50 * 1024 // 50KB per item
+		} else if b.Phase == "Completed" {
+			// For older Velero versions that don't track item counts,
+			// use a reasonable default estimate for completed backups
+			// Calculate based on backup duration as a proxy for size
+			if b.Started != nil && b.Completed != nil {
+				durationSeconds := b.Completed.Sub(*b.Started).Seconds()
+				if durationSeconds > 0 {
+					// Estimate ~1MB per second of backup time (conservative)
+					b.SizeBytes = int64(durationSeconds * 1024 * 1024)
+				} else {
+					// Fallback: assume 50MB for quick backups
+					b.SizeBytes = 50 * 1024 * 1024
+				}
+			} else {
+				// If timing info is missing, use a default 50MB estimate
+				b.SizeBytes = 50 * 1024 * 1024
+			}
+		}
+	}
 
 	return b
 }

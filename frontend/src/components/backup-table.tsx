@@ -5,7 +5,7 @@ import { ActionIcon, Group, Tooltip } from "@mantine/core";
 import { IconTrash, IconEye, IconRestore, IconFileText } from "@tabler/icons-react";
 import { StatusBadge } from "./status-badge";
 import { BackupProgress } from "./backup-progress";
-import { formatDate, formatDuration } from "@/lib/utils";
+import { formatDate, formatDuration, formatBytes } from "@/lib/utils";
 import type { Backup } from "@/lib/types";
 import { useAuthStore, hasRole } from "@/lib/auth";
 import Link from "next/link";
@@ -75,6 +75,13 @@ export function BackupTable({
           accessor: "storageLocation",
           title: "Storage",
           sortable: true,
+        },
+        {
+          accessor: "sizeBytes",
+          title: "Size",
+          sortable: true,
+          textAlign: "right",
+          render: (backup) => formatBytes(backup.sizeBytes),
         },
         {
           accessor: "errors",

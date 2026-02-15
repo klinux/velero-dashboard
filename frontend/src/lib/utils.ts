@@ -44,3 +44,13 @@ export function phaseColor(
       return "gray";
   }
 }
+
+export function formatBytes(bytes?: number | null): string {
+  if (!bytes || bytes === 0) return "-";
+
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const k = 1024;
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return `${(bytes / Math.pow(k, i)).toFixed(2)} ${units[i]}`;
+}

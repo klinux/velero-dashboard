@@ -83,6 +83,7 @@ func main() {
 	api.Get("/dashboard/stats", handlers.Dashboard.Stats)
 
 	api.Get("/backups", handlers.Backup.List)
+	api.Get("/backups/compare", handlers.Backup.Compare)
 	api.Get("/backups/:name", handlers.Backup.Get)
 	api.Get("/backups/:name/logs", handlers.Backup.Logs)
 

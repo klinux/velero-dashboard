@@ -1,9 +1,10 @@
 "use client";
 
-import { Modal, Code, ScrollArea, Text, Loader, Alert } from "@mantine/core";
-import { IconAlertCircle } from "@tabler/icons-react";
+import { Drawer, ScrollArea, Text, Loader, Alert, TextInput, Stack, Group, Badge } from "@mantine/core";
+import { IconAlertCircle, IconSearch } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { getBackupLogs } from "@/lib/api";
+import { useState, useMemo } from "react";
 
 interface LogViewerModalProps {
   opened: boolean;
@@ -11,7 +12,40 @@ interface LogViewerModalProps {
   backupName: string;
 }
 
+function colorizeLogLine(line: string): React.ReactNode {
+  // Detect log level and apply color
+  const errorPattern = /\b(ERROR|FATAL|FAIL|Failed|failed|error)\b/i;
+  const warnPattern = /\b(WARN|WARNING|Warn|warning)\b/i;
+  const infoPattern = /\b(INFO|Info|info)\b/i;
+  const debugPattern = /\b(DEBUG|Debug|debug|TRACE|Trace)\b/i;
+  const successPattern = /\b(SUCCESS|SUCCESS|Completed|completed|OK|ok)\b/i;
+
+  let color = "inherit";
+  let weight = "normal";
+
+  if (errorPattern.test(line)) {
+    color = "var(--mantine-color-red-6)";
+    weight = "500";
+  } else if (warnPattern.test(line)) {
+    color = "var(--mantine-color-yellow-6)";
+  } else if (successPattern.test(line)) {
+    color = "var(--mantine-color-teal-6)";
+  } else if (infoPattern.test(line)) {
+    color = "var(--mantine-color-blue-5)";
+  } else if (debugPattern.test(line)) {
+    color = "var(--mantine-color-gray-5)";
+  }
+
+  return (
+    <div style={{ color, fontWeight: weight, fontFamily: "monospace", fontSize: "12px", lineHeight: "1.6" }}>
+      {line}
+    </div>
+  );
+}
+
 export function LogViewerModal({ opened, onClose, backupName }: LogViewerModalProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+
   const { data: logs, isLoading, error } = useQuery({
     queryKey: ["backupLogs", backupName],
     queryFn: () => getBackupLogs(backupName),
@@ -19,13 +53,32 @@ export function LogViewerModal({ opened, onClose, backupName }: LogViewerModalPr
     retry: 1,
   });
 
+  const { filteredLines, matchCount } = useMemo(() => {
+    if (!logs) return { filteredLines: [], matchCount: 0 };
+
+    const lines = logs.split("\n");
+
+    if (!searchQuery.trim()) {
+      return { filteredLines: lines, matchCount: lines.length };
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = lines.filter(line => line.toLowerCase().includes(query));
+
+    return { filteredLines: filtered, matchCount: filtered.length };
+  }, [logs, searchQuery]);
+
   return (
-    <Modal
+    <Drawer
       opened={opened}
       onClose={onClose}
       title={`Backup Logs: ${backupName}`}
+      position="right"
       size="xl"
-      centered
+      styles={{
+        body: { padding: 0, height: "calc(100% - 60px)" },
+        header: { borderBottom: "1px solid var(--mantine-color-gray-3)" },
+      }}
     >
       {isLoading && (
         <div style={{ display: "flex", justifyContent: "center", padding: "2rem" }}>
@@ -38,24 +91,40 @@ export function LogViewerModal({ opened, onClose, backupName }: LogViewerModalPr
           icon={<IconAlertCircle size={16} />}
           title="Error loading logs"
           color="red"
-          mb="md"
+          m="md"
         >
           {error instanceof Error ? error.message : "Failed to load backup logs"}
         </Alert>
       )}
 
       {logs && (
-        <>
-          <Text size="xs" c="dimmed" mb="xs">
-            Backup logs retrieved from storage
-          </Text>
-          <ScrollArea h={500} type="auto">
-            <Code block style={{ whiteSpace: "pre-wrap", fontSize: "12px" }}>
-              {logs}
-            </Code>
+        <Stack gap={0} h="100%">
+          <div style={{ padding: "12px", borderBottom: "1px solid var(--mantine-color-gray-3)" }}>
+            <Group justify="space-between" mb="xs">
+              <Text size="xs" c="dimmed">
+                Backup logs retrieved from storage
+              </Text>
+              <Badge variant="light" size="sm">
+                {matchCount} {searchQuery ? "matches" : "lines"}
+              </Badge>
+            </Group>
+            <TextInput
+              placeholder="Search logs..."
+              leftSection={<IconSearch size={16} />}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              size="sm"
+            />
+          </div>
+          <ScrollArea style={{ flex: 1 }} type="auto">
+            <div style={{ padding: "12px", backgroundColor: "var(--mantine-color-dark-8)" }}>
+              {filteredLines.map((line, index) => (
+                <div key={index}>{colorizeLogLine(line)}</div>
+              ))}
+            </div>
           </ScrollArea>
-        </>
+        </Stack>
       )}
-    </Modal>
+    </Drawer>
   );
 }

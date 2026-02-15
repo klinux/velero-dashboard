@@ -69,3 +69,20 @@ func (h *BackupHandler) Logs(c *fiber.Ctx) error {
 	}
 	return c.SendString(logs)
 }
+
+func (h *BackupHandler) Compare(c *fiber.Ctx) error {
+	backup1 := c.Query("backup1")
+	backup2 := c.Query("backup2")
+
+	if backup1 == "" || backup2 == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "backup1 and backup2 query parameters are required"})
+	}
+
+	comparison, err := h.client.CompareBackups(c.Context(), backup1, backup2)
+	if err != nil {
+		h.logger.Error("Failed to compare backups", zap.String("backup1", backup1), zap.String("backup2", backup2), zap.Error(err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(comparison)
+}
