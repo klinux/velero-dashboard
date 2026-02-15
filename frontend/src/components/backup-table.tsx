@@ -2,8 +2,9 @@
 
 import { DataTable } from "mantine-datatable";
 import { ActionIcon, Group, Tooltip } from "@mantine/core";
-import { IconTrash, IconEye, IconRestore } from "@tabler/icons-react";
+import { IconTrash, IconEye, IconRestore, IconFileText } from "@tabler/icons-react";
 import { StatusBadge } from "./status-badge";
+import { BackupProgress } from "./backup-progress";
 import { formatDate, formatDuration } from "@/lib/utils";
 import type { Backup } from "@/lib/types";
 import { useAuthStore, hasRole } from "@/lib/auth";
@@ -14,6 +15,7 @@ interface BackupTableProps {
   loading: boolean;
   onDelete: (name: string) => void;
   onRestore: (backupName: string) => void;
+  onViewLogs: (backupName: string) => void;
   page: number;
   onPageChange: (page: number) => void;
   recordsPerPage: number;
@@ -26,6 +28,7 @@ export function BackupTable({
   loading,
   onDelete,
   onRestore,
+  onViewLogs,
   page,
   onPageChange,
   recordsPerPage,
@@ -61,7 +64,12 @@ export function BackupTable({
           accessor: "phase",
           title: "Status",
           sortable: true,
-          render: (backup) => <StatusBadge phase={backup.phase} />,
+          render: (backup) => (
+            <div>
+              <StatusBadge phase={backup.phase} />
+              <BackupProgress backup={backup} />
+            </div>
+          ),
         },
         {
           accessor: "storageLocation",
@@ -107,6 +115,17 @@ export function BackupTable({
                   <IconEye size={16} />
                 </ActionIcon>
               </Tooltip>
+              {(backup.phase === "Completed" || backup.phase === "Failed" || backup.phase === "PartiallyFailed") && (
+                <Tooltip label="View logs">
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    onClick={() => onViewLogs(backup.name)}
+                  >
+                    <IconFileText size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
               {canRestore && backup.phase === "Completed" && (
                 <Tooltip label="Restore">
                   <ActionIcon

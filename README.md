@@ -470,11 +470,11 @@ velero/
 ## Roadmap
 
 - [x] Authentication (Basic + OIDC with role-based access)
-- [ ] Backup log viewer (via DownloadRequest CRD)
-- [ ] Backup/restore progress bar (real-time via WebSocket)
+- [x] Backup log viewer (via DownloadRequest CRD)
+- [x] Backup/restore progress bar (real-time via WebSocket)
+- [x] Spotlight search (Cmd+K) for quick navigation
 - [ ] Multi-cluster support
 - [ ] Backup comparison (diff between two backups)
-- [ ] Spotlight search (Cmd+K) for quick navigation
 - [ ] Backup size metrics and storage usage charts
 
 ## Contributing

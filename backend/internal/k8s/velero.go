@@ -1,8 +1,12 @@
 package k8s
 
 import (
+	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -671,6 +675,110 @@ func (c *Client) GetDashboardStats(ctx context.Context) (*DashboardStats, error)
 	}
 
 	return stats, nil
+}
+
+// --- Backup Logs ---
+
+func (c *Client) GetBackupLogs(ctx context.Context, backupName string) (string, error) {
+	// Create a DownloadRequest for the backup logs
+	requestName := fmt.Sprintf("%s-logs-%d", backupName, time.Now().Unix())
+
+	downloadRequest := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "velero.io/v1",
+			"kind":       "DownloadRequest",
+			"metadata": map[string]interface{}{
+				"name":      requestName,
+				"namespace": c.namespace,
+			},
+			"spec": map[string]interface{}{
+				"target": map[string]interface{}{
+					"kind": "BackupLog",
+					"name": backupName,
+				},
+			},
+		},
+	}
+
+	// Create the DownloadRequest
+	_, err := c.dynamic.Resource(DownloadRequestGVR).Namespace(c.namespace).Create(ctx, downloadRequest, metav1.CreateOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to create download request: %w", err)
+	}
+
+	c.logger.Info("Download request created", zap.String("name", requestName), zap.String("backup", backupName))
+
+	// Wait for the download URL to be ready (with timeout)
+	timeout := time.After(30 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	var downloadURL string
+	for {
+		select {
+		case <-timeout:
+			return "", fmt.Errorf("timeout waiting for download request to be ready")
+		case <-ticker.C:
+			// Get the DownloadRequest status
+			dr, err := c.dynamic.Resource(DownloadRequestGVR).Namespace(c.namespace).Get(ctx, requestName, metav1.GetOptions{})
+			if err != nil {
+				continue
+			}
+
+			// Check if the download URL is available
+			status, found, _ := unstructured.NestedMap(dr.Object, "status")
+			if !found {
+				continue
+			}
+
+			phase, _, _ := unstructured.NestedString(status, "phase")
+			if phase == "Processed" {
+				url, found, _ := unstructured.NestedString(status, "downloadURL")
+				if found && url != "" {
+					downloadURL = url
+					goto download
+				}
+			}
+		}
+	}
+
+download:
+	// Download the logs from the URL
+	resp, err := http.Get(downloadURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to download logs: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read the entire response body first
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Check if the content is gzipped by looking at magic bytes (0x1f 0x8b)
+	var logBytes []byte
+	if len(bodyBytes) > 2 && bodyBytes[0] == 0x1f && bodyBytes[1] == 0x8b {
+		// Content is gzipped, decompress it
+		gzReader, err := gzip.NewReader(strings.NewReader(string(bodyBytes)))
+		if err != nil {
+			return "", fmt.Errorf("failed to create gzip reader: %w", err)
+		}
+		defer gzReader.Close()
+
+		logBytes, err = io.ReadAll(gzReader)
+		if err != nil {
+			return "", fmt.Errorf("failed to decompress logs: %w", err)
+		}
+	} else {
+		// Content is not gzipped, use as-is
+		logBytes = bodyBytes
+	}
+
+	// Clean up the DownloadRequest
+	_ = c.dynamic.Resource(DownloadRequestGVR).Namespace(c.namespace).Delete(ctx, requestName, metav1.DeleteOptions{})
+
+	return string(logBytes), nil
 }
 
 // --- Parsers ---

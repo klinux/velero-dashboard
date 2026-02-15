@@ -8,6 +8,7 @@ import Link from "next/link";
 import { BackupTable } from "@/components/backup-table";
 import { TableSearchInput } from "@/components/table-search-input";
 import { ConfirmDelete } from "@/components/confirm-delete";
+import { LogViewerModal } from "@/components/log-viewer-modal";
 import { useBackups, useDeleteBackup } from "@/hooks/use-backups";
 import { useCreateRestore } from "@/hooks/use-restores";
 import { useTableSearch } from "@/hooks/use-table-search";
@@ -21,6 +22,8 @@ export default function BackupsPage() {
   const createRestoreMutation = useCreateRestore();
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleteOpened, { open: openDelete, close: closeDelete }] = useDisclosure(false);
+  const [logsTarget, setLogsTarget] = useState<string>("");
+  const [logsOpened, { open: openLogs, close: closeLogs }] = useDisclosure(false);
 
   const {
     search,
@@ -85,6 +88,11 @@ export default function BackupsPage() {
     );
   };
 
+  const handleViewLogs = (backupName: string) => {
+    setLogsTarget(backupName);
+    openLogs();
+  };
+
   return (
     <Stack gap="lg">
       <Group justify="space-between">
@@ -107,6 +115,7 @@ export default function BackupsPage() {
         loading={isLoading}
         onDelete={handleDelete}
         onRestore={handleRestore}
+        onViewLogs={handleViewLogs}
         page={page}
         onPageChange={setPage}
         recordsPerPage={pageSize}
@@ -121,6 +130,12 @@ export default function BackupsPage() {
         title="Delete Backup"
         message={`Are you sure you want to delete backup "${deleteTarget}"? This action cannot be undone.`}
         loading={deleteMutation.isPending}
+      />
+
+      <LogViewerModal
+        opened={logsOpened}
+        onClose={closeLogs}
+        backupName={logsTarget}
       />
     </Stack>
   );

@@ -77,6 +77,33 @@ export const createBackup = (data: CreateBackupRequest) =>
 export const deleteBackup = (name: string) =>
   fetchJSON<{ message: string }>(`/backups/${name}`, { method: "DELETE" });
 
+export const getBackupLogs = async (name: string): Promise<string> => {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token && token !== "none") {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_BASE}/api/backups/${name}/logs`, { headers });
+
+  if (res.status === 401) {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("velero_token");
+      localStorage.removeItem("velero_username");
+      localStorage.removeItem("velero_role");
+      window.location.href = "/login";
+    }
+    throw new Error("Session expired");
+  }
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Failed to fetch logs: ${res.statusText}`);
+  }
+
+  return res.text();
+};
+
 // Restores
 export const listRestores = () => fetchJSON<Restore[]>("/restores");
 export const getRestore = (name: string) => fetchJSON<Restore>(`/restores/${name}`);

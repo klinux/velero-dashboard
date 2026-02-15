@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MantineProvider, createTheme } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
+import { GlobalSpotlight } from "./global-spotlight";
 import { useState } from "react";
 
 import "@mantine/core/styles.css";
@@ -72,6 +73,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <MantineProvider theme={theme} defaultColorScheme="auto">
         <Notifications position="top-right" />
+        <GlobalSpotlight />
         {children}
       </MantineProvider>
     </QueryClientProvider>

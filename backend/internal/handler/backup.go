@@ -61,11 +61,11 @@ func (h *BackupHandler) Delete(c *fiber.Ctx) error {
 }
 
 func (h *BackupHandler) Logs(c *fiber.Ctx) error {
-	// Backup logs require creating a DownloadRequest CRD and waiting for it.
-	// For MVP, return a placeholder directing users to use velero CLI for logs.
 	name := c.Params("name")
-	return c.JSON(fiber.Map{
-		"backup": name,
-		"note":   "Backup log download via DownloadRequest CRD — coming soon",
-	})
+	logs, err := h.client.GetBackupLogs(c.Context(), name)
+	if err != nil {
+		h.logger.Error("Failed to get backup logs", zap.String("name", name), zap.Error(err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.SendString(logs)
 }

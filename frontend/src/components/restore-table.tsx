@@ -2,6 +2,7 @@
 
 import { DataTable } from "mantine-datatable";
 import { StatusBadge } from "./status-badge";
+import { RestoreProgress } from "./restore-progress";
 import { formatDate, formatDuration } from "@/lib/utils";
 import type { Restore } from "@/lib/types";
 
@@ -45,7 +46,12 @@ export function RestoreTable({
           accessor: "phase",
           title: "Status",
           sortable: true,
-          render: (restore) => <StatusBadge phase={restore.phase} />,
+          render: (restore) => (
+            <div>
+              <StatusBadge phase={restore.phase} />
+              <RestoreProgress restore={restore} />
+            </div>
+          ),
         },
         { accessor: "backupName", title: "From Backup", sortable: true },
         { accessor: "errors", title: "Errors", sortable: true, textAlign: "center" },

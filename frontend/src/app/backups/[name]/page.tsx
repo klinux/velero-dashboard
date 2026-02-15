@@ -11,18 +11,22 @@ import {
   Skeleton,
   Anchor,
   Table,
+  Button,
 } from "@mantine/core";
-import { IconArrowLeft } from "@tabler/icons-react";
+import { IconArrowLeft, IconFileText } from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useBackup } from "@/hooks/use-backups";
 import { StatusBadge } from "@/components/status-badge";
+import { LogViewerModal } from "@/components/log-viewer-modal";
 import { formatDate, formatDuration } from "@/lib/utils";
 
 export default function BackupDetailPage() {
   const params = useParams();
   const name = params.name as string;
   const { data: backup, isLoading } = useBackup(name);
+  const [logsOpened, { open: openLogs, close: closeLogs }] = useDisclosure(false);
 
   if (isLoading) {
     return (
@@ -47,12 +51,23 @@ export default function BackupDetailPage() {
 
   return (
     <Stack gap="lg">
-      <Group>
-        <Anchor component={Link} href="/backups" c="dimmed">
-          <IconArrowLeft size={20} />
-        </Anchor>
-        <Title order={2}>{backup.name}</Title>
-        <StatusBadge phase={backup.phase} />
+      <Group justify="space-between">
+        <Group>
+          <Anchor component={Link} href="/backups" c="dimmed">
+            <IconArrowLeft size={20} />
+          </Anchor>
+          <Title order={2}>{backup.name}</Title>
+          <StatusBadge phase={backup.phase} />
+        </Group>
+        {(backup.phase === "Completed" || backup.phase === "Failed" || backup.phase === "PartiallyFailed") && (
+          <Button
+            variant="light"
+            leftSection={<IconFileText size={16} />}
+            onClick={openLogs}
+          >
+            View Logs
+          </Button>
+        )}
       </Group>
 
       <Grid>
@@ -172,6 +187,12 @@ export default function BackupDetailPage() {
           </Stack>
         </Grid.Col>
       </Grid>
+
+      <LogViewerModal
+        opened={logsOpened}
+        onClose={closeLogs}
+        backupName={name}
+      />
     </Stack>
   );
 }
