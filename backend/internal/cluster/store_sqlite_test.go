@@ -14,18 +14,18 @@ func newTestSQLiteStore(t *testing.T) (*SQLiteStore, func()) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	logger, _ := zap.NewDevelopment()
 	store, err := NewSQLiteStore(tmpFile.Name(), "test-key-32-bytes-long-padding!!", logger)
 	if err != nil {
-		os.Remove(tmpFile.Name())
+		_ = os.Remove(tmpFile.Name())
 		t.Fatal(err)
 	}
 
 	cleanup := func() {
-		store.Close()
-		os.Remove(tmpFile.Name())
+		_ = store.Close()
+		_ = os.Remove(tmpFile.Name())
 	}
 
 	return store, cleanup
@@ -102,10 +102,10 @@ func TestSQLiteStoreList(t *testing.T) {
 	}
 
 	// Create two clusters
-	store.Create(ctx, CreateClusterRequest{
+	_, _ = store.Create(ctx, CreateClusterRequest{
 		Name: "cluster-a", Kubeconfig: "kc-a", Namespace: "velero", SetAsDefault: true,
 	})
-	store.Create(ctx, CreateClusterRequest{
+	_, _ = store.Create(ctx, CreateClusterRequest{
 		Name: "cluster-b", Kubeconfig: "kc-b", Namespace: "backup",
 	})
 
@@ -253,7 +253,7 @@ func TestSQLiteStoreGetDefault(t *testing.T) {
 	}
 
 	// Create default
-	store.Create(ctx, CreateClusterRequest{
+	_, _ = store.Create(ctx, CreateClusterRequest{
 		Name: "default-cluster", Kubeconfig: "kc", Namespace: "velero", SetAsDefault: true,
 	})
 
@@ -306,7 +306,7 @@ func TestSQLiteStoreDuplicateName(t *testing.T) {
 
 	ctx := context.Background()
 
-	store.Create(ctx, CreateClusterRequest{
+	_, _ = store.Create(ctx, CreateClusterRequest{
 		Name: "duplicate", Kubeconfig: "kc", Namespace: "velero",
 	})
 
@@ -349,8 +349,8 @@ func TestSQLiteStoreAutoGenerateKey(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmpFile.Close()
-	defer os.Remove(tmpFile.Name())
+	_ = tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	logger, _ := zap.NewDevelopment()
 
@@ -359,7 +359,7 @@ func TestSQLiteStoreAutoGenerateKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected auto-generated key: %v", err)
 	}
-	defer store.Close()
+	defer func() { _ = store.Close() }()
 
 	// Should still work with the auto-generated key
 	ctx := context.Background()

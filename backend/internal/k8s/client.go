@@ -125,7 +125,7 @@ func NewClientFromToken(apiServer, token, caCert, namespace string, insecureSkip
 
 	// Add CA cert if provided
 	if caCert != "" && !insecureSkipTLS {
-		cfg.TLSClientConfig.CAData = []byte(caCert)
+		cfg.CAData = []byte(caCert)
 	}
 
 	dynClient, err := dynamic.NewForConfig(cfg)

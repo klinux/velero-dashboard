@@ -91,7 +91,7 @@ func (s *SQLiteStore) List(_ context.Context) ([]*WebhookConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list webhooks: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var results []*WebhookConfig
 	for rows.Next() {

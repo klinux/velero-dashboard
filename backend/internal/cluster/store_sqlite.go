@@ -36,14 +36,14 @@ func NewSQLiteStore(dbPath string, encryptionKey string, logger *zap.Logger) (*S
 
 	// Initialize schema
 	if err := initSQLiteSchema(db); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, err
 	}
 
 	// Setup encryption
 	gcm, err := setupCipher(encryptionKey, logger)
 	if err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, err
 	}
 
@@ -205,7 +205,7 @@ func (s *SQLiteStore) List(ctx context.Context) ([]*ClusterSummary, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var clusters []*ClusterSummary
 	for rows.Next() {
@@ -241,7 +241,7 @@ func (s *SQLiteStore) Update(ctx context.Context, id string, req UpdateClusterRe
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// If setting as default, clear other defaults
 	if req.SetAsDefault != nil && *req.SetAsDefault {

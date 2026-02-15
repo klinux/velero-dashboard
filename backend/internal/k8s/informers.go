@@ -203,14 +203,15 @@ func (im *InformerManager) checkAndNotify(typeName string, obj *unstructured.Uns
 
 	switch typeName {
 	case "backup":
-		if phase == "Failed" {
+		switch phase {
+		case "Failed":
 			payload = &NotificationPayload{
 				EventType: "backup_failed",
 				Title:     "Backup Failed",
 				Message:   fmt.Sprintf("Backup \"%s\" failed", name),
 				Resource:  parsed,
 			}
-		} else if phase == "PartiallyFailed" {
+		case "PartiallyFailed":
 			payload = &NotificationPayload{
 				EventType: "backup_partially_failed",
 				Title:     "Backup Partially Failed",
