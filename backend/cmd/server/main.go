@@ -22,7 +22,7 @@ import (
 
 func main() {
 	zapLogger, _ := zap.NewProduction()
-	defer zapLogger.Sync()
+	defer func() { _ = zapLogger.Sync() }()
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
@@ -133,7 +133,9 @@ func main() {
 		<-sigCh
 		zapLogger.Info("Shutting down...")
 		cancel()
-		app.Shutdown()
+		if err := app.Shutdown(); err != nil {
+			zapLogger.Error("Shutdown error", zap.Error(err))
+		}
 	}()
 
 	zapLogger.Info("Starting Velero Dashboard API",

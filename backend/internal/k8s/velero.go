@@ -844,7 +844,7 @@ download:
 	if err != nil {
 		return "", fmt.Errorf("failed to download logs: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Read the entire response body first
 	bodyBytes, err := io.ReadAll(resp.Body)
@@ -860,7 +860,7 @@ download:
 		if err != nil {
 			return "", fmt.Errorf("failed to create gzip reader: %w", err)
 		}
-		defer gzReader.Close()
+		defer func() { _ = gzReader.Close() }()
 
 		logBytes, err = io.ReadAll(gzReader)
 		if err != nil {

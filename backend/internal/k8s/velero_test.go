@@ -256,9 +256,7 @@ func TestCreateRestore(t *testing.T) {
 		t.Fatalf("CreateRestore failed: %v", err)
 	}
 
-	if restore.BackupName != "" {
-		// Note: spec.backupName isn't returned in status on creation
-	}
+	// Note: spec.backupName isn't returned in status on creation
 	if restore.Name == "" {
 		t.Error("expected auto-generated restore name")
 	}

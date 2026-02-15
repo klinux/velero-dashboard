@@ -54,7 +54,7 @@ func (h *Hub) Broadcast(event interface{}) {
 			h.logger.Debug("Failed to write to WebSocket client", zap.Error(err))
 			go func(c *websocket.Conn) {
 				h.Unregister(c)
-				c.Close()
+				_ = c.Close()
 			}(conn)
 		}
 	}

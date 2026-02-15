@@ -214,6 +214,8 @@ func extractGroups(claims map[string]interface{}, claimKey string) []string {
 
 func generateState() string {
 	b := make([]byte, 16)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		panic("failed to generate random state: " + err.Error())
+	}
 	return hex.EncodeToString(b)
 }

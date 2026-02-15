@@ -19,7 +19,7 @@ func (h *WSHandler) Handle(conn *websocket.Conn) {
 	h.hub.Register(conn)
 	defer func() {
 		h.hub.Unregister(conn)
-		conn.Close()
+		_ = conn.Close()
 	}()
 
 	// Keep connection alive by reading (client may send pings)

@@ -26,7 +26,9 @@ type JWTManager struct {
 func NewJWTManager(secret string, expiration time.Duration) *JWTManager {
 	if secret == "" {
 		b := make([]byte, 32)
-		rand.Read(b)
+		if _, err := rand.Read(b); err != nil {
+			panic("failed to generate random secret: " + err.Error())
+		}
 		secret = hex.EncodeToString(b)
 	}
 	return &JWTManager{
