@@ -11,6 +11,8 @@ import {
   Center,
   Badge,
   ThemeIcon,
+  SimpleGrid,
+  rem,
 } from "@mantine/core";
 import { AreaChart } from "@mantine/charts";
 import { useQuery } from "@tanstack/react-query";
@@ -18,12 +20,16 @@ import { getDashboardStats, listBackups, listSchedules } from "@/lib/api";
 import { StatsCards } from "@/components/stats-cards";
 import { StatusBadge } from "@/components/status-badge";
 import { timeAgo, formatBytes } from "@/lib/utils";
+import { useClusterStore } from "@/lib/cluster";
+import { useClusters } from "@/hooks/use-clusters";
 import {
   IconCircleFilled,
   IconCalendarEvent,
   IconClock,
+  IconServer,
+  IconWorldCheck,
 } from "@tabler/icons-react";
-import type { Backup, Schedule } from "@/lib/types";
+import type { Backup, Schedule, DashboardStats } from "@/lib/types";
 import Link from "next/link";
 
 function buildActivityData(backups: Backup[]) {
@@ -53,23 +59,78 @@ function buildActivityData(backups: Backup[]) {
   }));
 }
 
+function CrossClusterOverview({ stats }: { stats?: DashboardStats }) {
+  if (!stats) return null;
+
+  const successRate =
+    stats.totalBackups > 0
+      ? Math.round((stats.completedBackups / stats.totalBackups) * 100)
+      : 0;
+
+  const items = [
+    { label: "Backups", value: stats.totalBackups, color: "indigo" },
+    { label: "Completed", value: stats.completedBackups, color: "teal" },
+    { label: "Failed", value: stats.failedBackups, color: "red" },
+    { label: "Schedules", value: stats.totalSchedules, color: "violet" },
+    { label: "Success Rate", value: `${successRate}%`, color: successRate >= 90 ? "teal" : successRate >= 50 ? "yellow" : "red" },
+    { label: "Storage Locations", value: `${stats.healthyLocations}/${stats.storageLocations}`, color: "green" },
+  ];
+
+  return (
+    <Paper p="md" style={{ borderLeft: `3px solid var(--mantine-color-indigo-5)` }}>
+      <Group gap="xs" mb="sm">
+        <IconWorldCheck size={18} color="var(--mantine-color-indigo-5)" />
+        <Text size="sm" fw={600}>
+          All Clusters Overview
+        </Text>
+      </Group>
+      <SimpleGrid cols={{ base: 3, sm: 6 }}>
+        {items.map((item) => (
+          <div key={item.label}>
+            <Text size={rem(20)} fw={700} c={item.color} lh={1.2}>
+              {item.value}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {item.label}
+            </Text>
+          </div>
+        ))}
+      </SimpleGrid>
+    </Paper>
+  );
+}
+
 export default function DashboardPage() {
+  const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
+  const { data: clusters } = useClusters();
+  const hasMultipleClusters = (clusters?.length ?? 0) > 1;
+
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ["dashboard"],
-    queryFn: getDashboardStats,
+    queryKey: ["dashboard", selectedClusterId],
+    queryFn: () => getDashboardStats(selectedClusterId || undefined),
     refetchInterval: 10000,
+    enabled: !!selectedClusterId,
+  });
+
+  const { data: allClustersStats } = useQuery({
+    queryKey: ["dashboard", "all"],
+    queryFn: () => getDashboardStats("all"),
+    refetchInterval: 30000,
+    enabled: hasMultipleClusters,
   });
 
   const { data: backups } = useQuery({
-    queryKey: ["backups"],
-    queryFn: listBackups,
+    queryKey: ["backups", selectedClusterId],
+    queryFn: () => listBackups(selectedClusterId || undefined),
     refetchInterval: 15000,
+    enabled: !!selectedClusterId,
   });
 
   const { data: schedules } = useQuery({
-    queryKey: ["schedules"],
-    queryFn: listSchedules,
+    queryKey: ["schedules", selectedClusterId],
+    queryFn: () => listSchedules(selectedClusterId || undefined),
     refetchInterval: 30000,
+    enabled: !!selectedClusterId,
   });
 
   const recentBackups = (backups || [])
@@ -103,6 +164,30 @@ export default function DashboardPage() {
 
   const activityData = buildActivityData(backups || []);
 
+  // Show empty state if no cluster is selected
+  if (!selectedClusterId) {
+    return (
+      <Stack gap="lg" align="center" justify="center" style={{ minHeight: "60vh" }}>
+        <IconServer size={64} opacity={0.3} />
+        <div style={{ textAlign: "center" }}>
+          <Title order={2} mb="sm">
+            No Cluster Selected
+          </Title>
+          <Text size="md" c="dimmed" mb="lg">
+            {clusters?.length === 0
+              ? "Please add a cluster to get started. Go to Settings → Clusters."
+              : "Please select a cluster from the dropdown in the header."}
+          </Text>
+          {clusters?.length === 0 && (
+            <Text size="sm" c="dimmed">
+              Or configure a cluster via environment variables (KUBECONFIG, VELERO_NAMESPACE)
+            </Text>
+          )}
+        </div>
+      </Stack>
+    );
+  }
+
   return (
     <Stack gap="lg">
       <div>
@@ -111,6 +196,8 @@ export default function DashboardPage() {
           Kubernetes backup management overview
         </Text>
       </div>
+
+      {hasMultipleClusters && <CrossClusterOverview stats={allClustersStats} />}
 
       <StatsCards stats={stats} loading={statsLoading} />
 

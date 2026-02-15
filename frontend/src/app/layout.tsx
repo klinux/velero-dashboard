@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ColorSchemeScript } from "@mantine/core";
 import { Providers } from "@/components/providers";
 import { AuthGuard } from "@/components/auth-guard";
+// import { DashboardShell } from "@/components/app-shell";
 import { DashboardShell } from "@/components/app-shell";
 
 export const metadata: Metadata = {
@@ -24,9 +25,8 @@ export default function RootLayout({
       </head>
       <body>
         <Providers>
-          <AuthGuard>
-            <DashboardShell>{children}</DashboardShell>
-          </AuthGuard>
+          
+          <AuthGuard><DashboardShell>{children}</DashboardShell></AuthGuard>
         </Providers>
       </body>
     </html>

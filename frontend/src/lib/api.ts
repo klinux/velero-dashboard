@@ -12,6 +12,14 @@ import type {
   CreateVolumeSnapshotLocationRequest,
   UpdateBackupStorageLocationRequest,
   UpdateVolumeSnapshotLocationRequest,
+  Cluster,
+  CreateClusterRequest,
+  UpdateClusterRequest,
+  WebhookConfig,
+  CreateWebhookRequest,
+  UpdateWebhookRequest,
+  CrossClusterBackup,
+  CrossClusterRestoreRequest,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
@@ -53,6 +61,13 @@ async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
+// Helper to add ?cluster=id parameter to API paths
+function addClusterParam(path: string, clusterId?: string): string {
+  if (!clusterId) return path;
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}cluster=${encodeURIComponent(clusterId)}`;
+}
+
 // Auth
 export const getAuthConfig = () =>
   fetchJSON<{ mode: string }>("/auth/config");
@@ -66,25 +81,47 @@ export const loginBasic = (username: string, password: string) =>
 export const getMe = () =>
   fetchJSON<{ username: string; email: string; role: string }>("/auth/me");
 
+// Clusters
+export const listClusters = () => fetchJSON<Cluster[]>("/clusters");
+export const getCluster = (id: string) => fetchJSON<Cluster>(`/clusters/${id}`);
+export const createCluster = (data: CreateClusterRequest) =>
+  fetchJSON<Cluster>("/clusters", { method: "POST", body: JSON.stringify(data) });
+export const updateCluster = (id: string, data: UpdateClusterRequest) =>
+  fetchJSON<Cluster>(`/clusters/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+export const deleteCluster = (id: string) =>
+  fetchJSON<{ message: string }>(`/clusters/${id}`, { method: "DELETE" });
+
 // Dashboard
-export const getDashboardStats = () => fetchJSON<DashboardStats>("/dashboard/stats");
+export const getDashboardStats = (clusterId?: string) =>
+  fetchJSON<DashboardStats>(addClusterParam("/dashboard/stats", clusterId));
 
 // Backups
-export const listBackups = () => fetchJSON<Backup[]>("/backups");
-export const getBackup = (name: string) => fetchJSON<Backup>(`/backups/${name}`);
-export const createBackup = (data: CreateBackupRequest) =>
-  fetchJSON<Backup>("/backups", { method: "POST", body: JSON.stringify(data) });
-export const deleteBackup = (name: string) =>
-  fetchJSON<{ message: string }>(`/backups/${name}`, { method: "DELETE" });
+export const listBackups = (clusterId?: string) =>
+  fetchJSON<Backup[]>(addClusterParam("/backups", clusterId));
+export const getBackup = (name: string, clusterId?: string) =>
+  fetchJSON<Backup>(addClusterParam(`/backups/${name}`, clusterId));
+export const createBackup = (data: CreateBackupRequest, clusterId?: string) =>
+  fetchJSON<Backup>(addClusterParam("/backups", clusterId), {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+export const deleteBackup = (name: string, clusterId?: string) =>
+  fetchJSON<{ message: string }>(addClusterParam(`/backups/${name}`, clusterId), {
+    method: "DELETE",
+  });
 
-export const getBackupLogs = async (name: string): Promise<string> => {
+export const getBackupLogs = async (
+  name: string,
+  clusterId?: string
+): Promise<string> => {
   const token = getToken();
   const headers: Record<string, string> = {};
   if (token && token !== "none") {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}/api/backups/${name}/logs`, { headers });
+  const path = addClusterParam(`/backups/${name}/logs`, clusterId);
+  const res = await fetch(`${API_BASE}/api${path}`, { headers });
 
   if (res.status === 401) {
     if (typeof window !== "undefined") {
@@ -104,57 +141,145 @@ export const getBackupLogs = async (name: string): Promise<string> => {
   return res.text();
 };
 
-export const compareBackups = (backup1: string, backup2: string) =>
-  fetchJSON<import("./types").BackupComparisonResponse>(`/backups/compare?backup1=${encodeURIComponent(backup1)}&backup2=${encodeURIComponent(backup2)}`);
+export const compareBackups = (backup1: string, backup2: string, clusterId?: string) =>
+  fetchJSON<import("./types").BackupComparisonResponse>(
+    addClusterParam(
+      `/backups/compare?backup1=${encodeURIComponent(backup1)}&backup2=${encodeURIComponent(backup2)}`,
+      clusterId
+    )
+  );
 
 // Restores
-export const listRestores = () => fetchJSON<Restore[]>("/restores");
-export const getRestore = (name: string) => fetchJSON<Restore>(`/restores/${name}`);
-export const createRestore = (data: CreateRestoreRequest) =>
-  fetchJSON<Restore>("/restores", { method: "POST", body: JSON.stringify(data) });
+export const listRestores = (clusterId?: string) =>
+  fetchJSON<Restore[]>(addClusterParam("/restores", clusterId));
+export const getRestore = (name: string, clusterId?: string) =>
+  fetchJSON<Restore>(addClusterParam(`/restores/${name}`, clusterId));
+export const createRestore = (data: CreateRestoreRequest, clusterId?: string) =>
+  fetchJSON<Restore>(addClusterParam("/restores", clusterId), {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 
 // Schedules
-export const listSchedules = () => fetchJSON<Schedule[]>("/schedules");
-export const getSchedule = (name: string) => fetchJSON<Schedule>(`/schedules/${name}`);
-export const createSchedule = (data: CreateScheduleRequest) =>
-  fetchJSON<Schedule>("/schedules", { method: "POST", body: JSON.stringify(data) });
-export const toggleSchedulePause = (name: string) =>
-  fetchJSON<Schedule>(`/schedules/${name}`, { method: "PATCH" });
-export const deleteSchedule = (name: string) =>
-  fetchJSON<{ message: string }>(`/schedules/${name}`, { method: "DELETE" });
+export const listSchedules = (clusterId?: string) =>
+  fetchJSON<Schedule[]>(addClusterParam("/schedules", clusterId));
+export const getSchedule = (name: string, clusterId?: string) =>
+  fetchJSON<Schedule>(addClusterParam(`/schedules/${name}`, clusterId));
+export const createSchedule = (data: CreateScheduleRequest, clusterId?: string) =>
+  fetchJSON<Schedule>(addClusterParam("/schedules", clusterId), {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+export const toggleSchedulePause = (name: string, clusterId?: string) =>
+  fetchJSON<Schedule>(addClusterParam(`/schedules/${name}`, clusterId), {
+    method: "PATCH",
+  });
+export const deleteSchedule = (name: string, clusterId?: string) =>
+  fetchJSON<{ message: string }>(addClusterParam(`/schedules/${name}`, clusterId), {
+    method: "DELETE",
+  });
 
 // Settings
-export const listBackupLocations = () =>
-  fetchJSON<BackupStorageLocation[]>("/settings/backup-locations");
-export const createBackupLocation = (data: CreateBackupStorageLocationRequest) =>
-  fetchJSON<BackupStorageLocation>("/settings/backup-locations", {
+export const listBackupLocations = (clusterId?: string) =>
+  fetchJSON<BackupStorageLocation[]>(
+    addClusterParam("/settings/backup-locations", clusterId)
+  );
+export const createBackupLocation = (
+  data: CreateBackupStorageLocationRequest,
+  clusterId?: string
+) =>
+  fetchJSON<BackupStorageLocation>(
+    addClusterParam("/settings/backup-locations", clusterId),
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    }
+  );
+export const deleteBackupLocation = (name: string, clusterId?: string) =>
+  fetchJSON<{ message: string }>(
+    addClusterParam(`/settings/backup-locations/${name}`, clusterId),
+    {
+      method: "DELETE",
+    }
+  );
+export const updateBackupLocation = (
+  name: string,
+  data: UpdateBackupStorageLocationRequest,
+  clusterId?: string
+) =>
+  fetchJSON<BackupStorageLocation>(
+    addClusterParam(`/settings/backup-locations/${name}`, clusterId),
+    {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }
+  );
+export const listSnapshotLocations = (clusterId?: string) =>
+  fetchJSON<VolumeSnapshotLocation[]>(
+    addClusterParam("/settings/snapshot-locations", clusterId)
+  );
+export const createSnapshotLocation = (
+  data: CreateVolumeSnapshotLocationRequest,
+  clusterId?: string
+) =>
+  fetchJSON<VolumeSnapshotLocation>(
+    addClusterParam("/settings/snapshot-locations", clusterId),
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    }
+  );
+export const deleteSnapshotLocation = (name: string, clusterId?: string) =>
+  fetchJSON<{ message: string }>(
+    addClusterParam(`/settings/snapshot-locations/${name}`, clusterId),
+    {
+      method: "DELETE",
+    }
+  );
+export const updateSnapshotLocation = (
+  name: string,
+  data: UpdateVolumeSnapshotLocationRequest,
+  clusterId?: string
+) =>
+  fetchJSON<VolumeSnapshotLocation>(
+    addClusterParam(`/settings/snapshot-locations/${name}`, clusterId),
+    {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }
+  );
+export const getServerInfo = (clusterId?: string) =>
+  fetchJSON<{ namespace: string; version: string }>(
+    addClusterParam("/settings/server-info", clusterId)
+  );
+
+// Webhook Notifications
+export const listWebhooks = () =>
+  fetchJSON<WebhookConfig[]>("/notifications/webhooks");
+export const createWebhook = (data: CreateWebhookRequest) =>
+  fetchJSON<WebhookConfig>("/notifications/webhooks", {
     method: "POST",
     body: JSON.stringify(data),
   });
-export const deleteBackupLocation = (name: string) =>
-  fetchJSON<{ message: string }>(`/settings/backup-locations/${name}`, {
-    method: "DELETE",
-  });
-export const updateBackupLocation = (name: string, data: UpdateBackupStorageLocationRequest) =>
-  fetchJSON<BackupStorageLocation>(`/settings/backup-locations/${name}`, {
+export const updateWebhook = (id: string, data: UpdateWebhookRequest) =>
+  fetchJSON<WebhookConfig>(`/notifications/webhooks/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
-export const listSnapshotLocations = () =>
-  fetchJSON<VolumeSnapshotLocation[]>("/settings/snapshot-locations");
-export const createSnapshotLocation = (data: CreateVolumeSnapshotLocationRequest) =>
-  fetchJSON<VolumeSnapshotLocation>("/settings/snapshot-locations", {
+export const deleteWebhook = (id: string) =>
+  fetchJSON<{ message: string }>(`/notifications/webhooks/${id}`, {
+    method: "DELETE",
+  });
+export const testWebhook = (id: string) =>
+  fetchJSON<{ message: string }>(`/notifications/webhooks/${id}/test`, {
+    method: "POST",
+  });
+
+// Cross-Cluster
+export const listSharedBackups = () =>
+  fetchJSON<CrossClusterBackup[]>("/backups/shared");
+export const createCrossClusterRestore = (data: CrossClusterRestoreRequest) =>
+  fetchJSON<Restore>("/restores/cross-cluster", {
     method: "POST",
     body: JSON.stringify(data),
   });
-export const deleteSnapshotLocation = (name: string) =>
-  fetchJSON<{ message: string }>(`/settings/snapshot-locations/${name}`, {
-    method: "DELETE",
-  });
-export const updateSnapshotLocation = (name: string, data: UpdateVolumeSnapshotLocationRequest) =>
-  fetchJSON<VolumeSnapshotLocation>(`/settings/snapshot-locations/${name}`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
-  });
-export const getServerInfo = () =>
-  fetchJSON<{ namespace: string; version: string }>("/settings/server-info");

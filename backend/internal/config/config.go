@@ -10,7 +10,8 @@ import (
 type Config struct {
 	Server     ServerConfig
 	Velero     VeleroConfig
-	Kubeconfig string
+	Kubeconfig string // Deprecated - for migration only
+	Cluster    ClusterConfig
 	Auth       AuthConfig
 }
 
@@ -26,6 +27,14 @@ func (s ServerConfig) Address() string {
 
 type VeleroConfig struct {
 	Namespace string
+}
+
+type ClusterConfig struct {
+	StorageType   string // "sqlite", "kubernetes", or "auto"
+	DBPath        string // SQLite database path
+	EncryptionKey string // AES encryption key (32 bytes)
+	Namespace     string // K8s namespace for ConfigMap/Secrets
+	ConfigMapName string // ConfigMap name for cluster metadata
 }
 
 type AuthConfig struct {
@@ -50,6 +59,13 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("SERVER_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001")
 	viper.SetDefault("VELERO_NAMESPACE", "velero")
 	viper.SetDefault("KUBECONFIG", "")
+
+	// Cluster storage defaults
+	viper.SetDefault("CLUSTER_STORAGE_TYPE", "auto")
+	viper.SetDefault("CLUSTER_DB_PATH", "./clusters.db")
+	viper.SetDefault("CLUSTER_ENCRYPTION_KEY", "")
+	viper.SetDefault("CLUSTER_K8S_NAMESPACE", "velero")
+	viper.SetDefault("CLUSTER_CONFIGMAP_NAME", "velero-dashboard-clusters")
 
 	// Auth defaults
 	viper.SetDefault("AUTH_MODE", "none")
@@ -84,6 +100,13 @@ func LoadConfig() (*Config, error) {
 			Namespace: viper.GetString("VELERO_NAMESPACE"),
 		},
 		Kubeconfig: viper.GetString("KUBECONFIG"),
+		Cluster: ClusterConfig{
+			StorageType:   viper.GetString("CLUSTER_STORAGE_TYPE"),
+			DBPath:        viper.GetString("CLUSTER_DB_PATH"),
+			EncryptionKey: viper.GetString("CLUSTER_ENCRYPTION_KEY"),
+			Namespace:     viper.GetString("CLUSTER_K8S_NAMESPACE"),
+			ConfigMapName: viper.GetString("CLUSTER_CONFIGMAP_NAME"),
+		},
 		Auth: AuthConfig{
 			Mode:              viper.GetString("AUTH_MODE"),
 			JWTSecret:         viper.GetString("JWT_SECRET"),

@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  pages: write
 
 jobs:
   create-release:
@@ -56,14 +57,95 @@ jobs:
             docker pull klinux/velero-dashboard-frontend:${{ github.ref_name }}
             ```
 
-            ## Installation
+            ## Helm Chart
 
             ```bash
             helm repo add velero-dashboard https://klinux.github.io/velero-dashboard
             helm repo update
-            helm install velero-dashboard velero-dashboard/velero-dashboard --version ${{ github.ref_name }}
+            helm install velero-dashboard velero-dashboard/velero-dashboard \
+              --namespace velero \
+              --set backend.image.tag=${{ github.ref_name }} \
+              --set frontend.image.tag=${{ github.ref_name }}
             ```
           draft: false
           prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-helm-chart:
+    name: Publish Helm Chart
+    runs-on: ubuntu-latest
+    needs: create-release
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.0
+
+      - name: Update Chart version from tag
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          sed -i "s/^version:.*/version: ${TAG}/" helm/velero-dashboard/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${TAG}\"/" helm/velero-dashboard/Chart.yaml
+          echo "Chart version set to ${TAG}"
+          cat helm/velero-dashboard/Chart.yaml
+
+      - name: Package Helm chart
+        run: |
+          mkdir -p .cr-release-packages
+          helm package helm/velero-dashboard -d .cr-release-packages
+
+      - name: Upload chart to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: .cr-release-packages/*.tgz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v6
+        with:
+          ref: gh-pages
+          path: gh-pages
+          fetch-depth: 0
+        continue-on-error: true
+
+      - name: Initialize gh-pages if missing
+        run: |
+          if [ ! -d "gh-pages/.git" ]; then
+            mkdir -p gh-pages
+            cd gh-pages
+            git init -b gh-pages
+            git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+            # Create an empty initial commit
+            git commit --allow-empty -m "Initialize gh-pages for Helm chart repo"
+            git push origin gh-pages
+          fi
+
+      - name: Update Helm repo index
+        run: |
+          if [ -f gh-pages/index.yaml ]; then
+            helm repo index .cr-release-packages \
+              --url "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}" \
+              --merge gh-pages/index.yaml
+          else
+            helm repo index .cr-release-packages \
+              --url "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
+          fi
+          cp .cr-release-packages/index.yaml gh-pages/index.yaml
+
+      - name: Push index to gh-pages
+        run: |
+          cd gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.yaml
+          git diff --staged --quiet && echo "No changes to index" && exit 0
+          git commit -m "Update Helm chart index for ${{ github.ref_name }}"
+          git push origin gh-pages

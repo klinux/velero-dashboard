@@ -9,44 +9,62 @@ import {
   deleteSchedule,
 } from "@/lib/api";
 import type { CreateScheduleRequest } from "@/lib/types";
+import { useClusterStore } from "@/lib/cluster";
 
 export function useSchedules() {
+  const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
+
   return useQuery({
-    queryKey: ["schedules"],
-    queryFn: listSchedules,
+    queryKey: ["schedules", selectedClusterId],
+    queryFn: () => listSchedules(selectedClusterId || undefined),
     refetchInterval: 15000,
+    enabled: !!selectedClusterId,
   });
 }
 
 export function useSchedule(name: string) {
+  const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
+
   return useQuery({
-    queryKey: ["schedules", name],
-    queryFn: () => getSchedule(name),
-    enabled: !!name,
+    queryKey: ["schedules", selectedClusterId, name],
+    queryFn: () => getSchedule(name, selectedClusterId || undefined),
+    enabled: !!name && !!selectedClusterId,
     refetchInterval: 5000,
   });
 }
 
 export function useCreateSchedule() {
   const queryClient = useQueryClient();
+  const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
+
   return useMutation({
-    mutationFn: (data: CreateScheduleRequest) => createSchedule(data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["schedules"] }),
+    mutationFn: (data: CreateScheduleRequest) =>
+      createSchedule(data, selectedClusterId || undefined),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["schedules", selectedClusterId] }),
   });
 }
 
 export function useToggleSchedulePause() {
   const queryClient = useQueryClient();
+  const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
+
   return useMutation({
-    mutationFn: (name: string) => toggleSchedulePause(name),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["schedules"] }),
+    mutationFn: (name: string) =>
+      toggleSchedulePause(name, selectedClusterId || undefined),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["schedules", selectedClusterId] }),
   });
 }
 
 export function useDeleteSchedule() {
   const queryClient = useQueryClient();
+  const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
+
   return useMutation({
-    mutationFn: (name: string) => deleteSchedule(name),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["schedules"] }),
+    mutationFn: (name: string) =>
+      deleteSchedule(name, selectedClusterId || undefined),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["schedules", selectedClusterId] }),
   });
 }

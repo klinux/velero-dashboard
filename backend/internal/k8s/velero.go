@@ -170,6 +170,9 @@ func (c *Client) CreateRestore(ctx context.Context, req CreateRestoreRequest) (*
 		}
 		spec["namespaceMapping"] = mapping
 	}
+	if req.ExistingResourcePolicy != "" {
+		spec["existingResourcePolicy"] = req.ExistingResourcePolicy
+	}
 
 	name := req.Name
 	if name == "" {
@@ -957,6 +960,17 @@ func parseRestore(obj unstructured.Unstructured) RestoreResponse {
 	r.ExcludedNamespaces = nestedStringSlice(obj.Object, "spec", "excludedNamespaces")
 	r.IncludedResources = nestedStringSlice(obj.Object, "spec", "includedResources")
 	r.ExcludedResources = nestedStringSlice(obj.Object, "spec", "excludedResources")
+	r.ExistingResourcePolicy = nestedString(obj.Object, "spec", "existingResourcePolicy")
+
+	// Parse namespace mapping
+	if nsMap, found, _ := unstructured.NestedMap(obj.Object, "spec", "namespaceMapping"); found {
+		r.NamespaceMapping = make(map[string]string, len(nsMap))
+		for k, v := range nsMap {
+			if s, ok := v.(string); ok {
+				r.NamespaceMapping[k] = s
+			}
+		}
+	}
 
 	r.Created = parseTimePtr(obj.GetCreationTimestamp().Time)
 	r.Started = nestedTimePtr(obj.Object, "status", "startTimestamp")

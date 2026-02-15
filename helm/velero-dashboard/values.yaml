@@ -31,6 +31,30 @@ frontend:
 velero:
   namespace: velero
 
+# Multi-cluster storage configuration
+cluster:
+  storageType: "auto"                          # auto (recommended), kubernetes, sqlite
+  configMapName: "velero-dashboard-clusters"   # ConfigMap name for cluster metadata
+  # Pre-configured clusters (declarative/GitOps mode)
+  # Each cluster requires a corresponding Secret with kubeconfig data.
+  # Create Secrets manually or via sealed-secrets before deploying.
+  clusters: []
+  # Example:
+  # clusters:
+  #   - name: production
+  #     namespace: velero
+  #     isDefault: true
+  #     secretName: velero-dashboard-cluster-production
+  #   - name: staging
+  #     namespace: velero
+  #     secretName: velero-dashboard-cluster-staging
+
+notification:
+  enabled: true  # Enable webhook notification system for backup/restore/BSL alerts
+
+rbac:
+  namespaced: false  # Set to true to use namespace-scoped Role instead of ClusterRole
+
 serviceAccount:
   create: true
   name: velero-dashboard

@@ -13,14 +13,17 @@ import {
   Button,
   ActionIcon,
   Tooltip,
+  Switch,
 } from "@mantine/core";
-import { IconPlus, IconTrash, IconEdit } from "@tabler/icons-react";
+import { notifications } from "@mantine/notifications";
+import { IconPlus, IconTrash, IconEdit, IconSend, IconBell } from "@tabler/icons-react";
 import { StatusBadge } from "@/components/status-badge";
 import { CreateBSLModal } from "@/components/create-bsl-modal";
 import { CreateVSLModal } from "@/components/create-vsl-modal";
 import { EditBSLModal } from "@/components/edit-bsl-modal";
 import { EditVSLModal } from "@/components/edit-vsl-modal";
 import { ConfirmDelete } from "@/components/confirm-delete";
+import { WebhookConfigModal } from "@/components/webhook-config-modal";
 import {
   useBackupLocations,
   useSnapshotLocations,
@@ -32,7 +35,8 @@ import {
   useDeleteSnapshotLocation,
   useUpdateSnapshotLocation,
 } from "@/hooks/use-settings";
-import type { BackupStorageLocation, VolumeSnapshotLocation } from "@/lib/types";
+import { useWebhooks, useDeleteWebhook, useTestWebhook } from "@/hooks/use-webhooks";
+import type { BackupStorageLocation, VolumeSnapshotLocation, WebhookConfig } from "@/lib/types";
 import { useAuthStore, hasRole } from "@/lib/auth";
 import { formatDate } from "@/lib/utils";
 
@@ -47,6 +51,10 @@ export default function SettingsPage() {
   const [editVSLModalOpened, setEditVSLModalOpened] = useState(false);
   const [selectedVSL, setSelectedVSL] = useState<string>("");
   const [editingVSL, setEditingVSL] = useState<VolumeSnapshotLocation | null>(null);
+  const [webhookModalOpened, setWebhookModalOpened] = useState(false);
+  const [editingWebhook, setEditingWebhook] = useState<WebhookConfig | null>(null);
+  const [deleteWebhookModalOpened, setDeleteWebhookModalOpened] = useState(false);
+  const [selectedWebhookId, setSelectedWebhookId] = useState<string>("");
 
   const { data: bsls, isLoading: bslLoading } = useBackupLocations();
   const { data: vsls, isLoading: vslLoading } = useSnapshotLocations();
@@ -59,6 +67,10 @@ export default function SettingsPage() {
   const createVSLMutation = useCreateSnapshotLocation();
   const deleteVSLMutation = useDeleteSnapshotLocation();
   const updateVSLMutation = useUpdateSnapshotLocation();
+
+  const { data: webhooks } = useWebhooks();
+  const deleteWebhookMutation = useDeleteWebhook();
+  const testWebhookMutation = useTestWebhook();
 
   const isAdmin = hasRole(role, "admin");
 
@@ -287,6 +299,150 @@ export default function SettingsPage() {
         )}
       </Paper>
 
+      {/* Webhook Notifications */}
+      <Paper p="md">
+        <Group justify="space-between" mb="sm">
+          <Group gap="xs">
+            <IconBell size={20} />
+            <Text fw={600}>Webhook Notifications</Text>
+          </Group>
+          {isAdmin && (
+            <Button
+              leftSection={<IconPlus size={16} />}
+              onClick={() => {
+                setEditingWebhook(null);
+                setWebhookModalOpened(true);
+              }}
+              size="sm"
+            >
+              Add Webhook
+            </Button>
+          )}
+        </Group>
+        <Table striped highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Name</Table.Th>
+              <Table.Th>Type</Table.Th>
+              <Table.Th>Events</Table.Th>
+              <Table.Th>Status</Table.Th>
+              <Table.Th>Enabled</Table.Th>
+              {isAdmin && <Table.Th style={{ width: 100 }}></Table.Th>}
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {(webhooks || []).map((wh) => (
+              <Table.Tr key={wh.id}>
+                <Table.Td fw={500}>{wh.name}</Table.Td>
+                <Table.Td>
+                  <Badge variant="light" size="sm">
+                    {wh.type}
+                  </Badge>
+                </Table.Td>
+                <Table.Td>
+                  <Group gap={4}>
+                    {wh.events.map((evt) => (
+                      <Badge key={evt} variant="outline" size="xs">
+                        {evt.replace(/_/g, " ")}
+                      </Badge>
+                    ))}
+                  </Group>
+                </Table.Td>
+                <Table.Td>
+                  {wh.lastStatus ? (
+                    <Badge
+                      color={wh.lastStatus === "success" ? "green" : "red"}
+                      variant="light"
+                      size="sm"
+                    >
+                      {wh.lastStatus}
+                    </Badge>
+                  ) : (
+                    <Text size="xs" c="dimmed">
+                      Never sent
+                    </Text>
+                  )}
+                </Table.Td>
+                <Table.Td>
+                  <Badge
+                    color={wh.enabled ? "green" : "gray"}
+                    variant="light"
+                    size="sm"
+                  >
+                    {wh.enabled ? "On" : "Off"}
+                  </Badge>
+                </Table.Td>
+                {isAdmin && (
+                  <Table.Td>
+                    <Group gap={4} justify="flex-end" wrap="nowrap">
+                      <Tooltip label="Send test">
+                        <ActionIcon
+                          variant="subtle"
+                          color="teal"
+                          loading={testWebhookMutation.isPending}
+                          onClick={() => {
+                            testWebhookMutation.mutate(wh.id, {
+                              onSuccess: () =>
+                                notifications.show({
+                                  title: "Test sent",
+                                  message: `Test notification sent to ${wh.name}`,
+                                  color: "green",
+                                }),
+                              onError: (err) =>
+                                notifications.show({
+                                  title: "Test failed",
+                                  message: err.message,
+                                  color: "red",
+                                }),
+                            });
+                          }}
+                        >
+                          <IconSend size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                      <Tooltip label="Edit">
+                        <ActionIcon
+                          variant="subtle"
+                          color="blue"
+                          onClick={() => {
+                            setEditingWebhook(wh);
+                            setWebhookModalOpened(true);
+                          }}
+                        >
+                          <IconEdit size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                      <Tooltip label="Delete">
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          onClick={() => {
+                            setSelectedWebhookId(wh.id);
+                            setDeleteWebhookModalOpened(true);
+                          }}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                    </Group>
+                  </Table.Td>
+                )}
+              </Table.Tr>
+            ))}
+            {(webhooks || []).length === 0 && (
+              <Table.Tr>
+                <Table.Td colSpan={isAdmin ? 6 : 5}>
+                  <Text size="sm" c="dimmed" ta="center">
+                    No webhooks configured. Add a webhook to receive notifications for backup failures, restore
+                    issues, and storage location problems.
+                  </Text>
+                </Table.Td>
+              </Table.Tr>
+            )}
+          </Table.Tbody>
+        </Table>
+      </Paper>
+
       {/* Modals */}
       <CreateBSLModal
         opened={createModalOpened}
@@ -352,6 +508,31 @@ export default function SettingsPage() {
         onConfirm={handleDeleteVSL}
         title="Delete Volume Snapshot Location"
         message={`Are you sure you want to delete volume snapshot location "${selectedVSL}"? This action cannot be undone.`}
+      />
+
+      <WebhookConfigModal
+        opened={webhookModalOpened}
+        onClose={() => {
+          setWebhookModalOpened(false);
+          setEditingWebhook(null);
+        }}
+        webhook={editingWebhook}
+      />
+
+      <ConfirmDelete
+        opened={deleteWebhookModalOpened}
+        onClose={() => {
+          setDeleteWebhookModalOpened(false);
+          setSelectedWebhookId("");
+        }}
+        onConfirm={async () => {
+          if (!selectedWebhookId) return;
+          await deleteWebhookMutation.mutateAsync(selectedWebhookId);
+          setDeleteWebhookModalOpened(false);
+          setSelectedWebhookId("");
+        }}
+        title="Delete Webhook"
+        message="Are you sure you want to delete this webhook? This action cannot be undone."
       />
     </Stack>
   );

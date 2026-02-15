@@ -1,0 +1,25 @@
+{{- if .Values.cluster.clusters }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.cluster.configMapName }}
+  namespace: {{ .Values.velero.namespace }}
+  labels:
+    {{- include "velero-dashboard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cluster-config
+data:
+  clusters.json: |
+    {
+      {{- $last := sub (len .Values.cluster.clusters) 1 }}
+      {{- range $i, $cluster := .Values.cluster.clusters }}
+      {{ printf "helm-%s" $cluster.name | quote }}: {
+        "name": {{ $cluster.name | quote }},
+        "namespace": {{ $cluster.namespace | default "velero" | quote }},
+        "secretRef": {{ $cluster.secretName | quote }},
+        "status": "pending",
+        "isDefault": {{ $cluster.isDefault | default false }},
+        "createdAt": "{{ now | date "2006-01-02T15:04:05Z" }}"
+      }{{ if ne $i $last }},{{ end }}
+      {{- end }}
+    }
+{{- end }}

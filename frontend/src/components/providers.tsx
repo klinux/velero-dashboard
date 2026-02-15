@@ -3,7 +3,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MantineProvider, createTheme } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
-import { GlobalSpotlight } from "./global-spotlight";
+import { ModalsProvider } from "@mantine/modals";
+// import { GlobalSpotlight } from "./global-spotlight"; // REMOVED: Causes infinite loop
 import { useState } from "react";
 
 import "@mantine/core/styles.css";
@@ -72,9 +73,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <MantineProvider theme={theme} defaultColorScheme="auto">
-        <Notifications position="top-right" />
-        <GlobalSpotlight />
-        {children}
+        <ModalsProvider>
+          <Notifications position="top-right" />
+          {/* TODO: Temporarily disabled GlobalSpotlight */}
+          {/* <GlobalSpotlight /> */}
+          {children}
+        </ModalsProvider>
       </MantineProvider>
     </QueryClientProvider>
   );

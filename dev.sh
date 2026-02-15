@@ -59,13 +59,22 @@ function start_backend() {
         log_warn "Backend will fail to connect to Kubernetes cluster"
     fi
 
+    # Generate encryption key if not set
+    if [ -z "$CLUSTER_ENCRYPTION_KEY" ]; then
+        export CLUSTER_ENCRYPTION_KEY=$(openssl rand -base64 32)
+        log_info "Generated encryption key for cluster storage"
+    fi
+
     # Start with air (hot-reload) or fall back to go run
     AIR_BIN=$(command -v air 2>/dev/null || echo "$HOME/go/bin/air")
     if [ -x "$AIR_BIN" ]; then
         KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
         VELERO_NAMESPACE="${VELERO_NAMESPACE:-velero}" \
+        CLUSTER_STORAGE_TYPE="${CLUSTER_STORAGE_TYPE:-sqlite}" \
+        CLUSTER_DB_PATH="${CLUSTER_DB_PATH:-./clusters.db}" \
+        CLUSTER_ENCRYPTION_KEY="$CLUSTER_ENCRYPTION_KEY" \
         SERVER_PORT=8080 \
-        SERVER_ALLOWED_ORIGINS="http://localhost:3000" \
+        SERVER_ALLOWED_ORIGINS="http://localhost:3000,http://localhost:3001" \
         $AIR_BIN &
         log_success "Backend started with hot-reload (air) on :8080"
     else
@@ -73,8 +82,11 @@ function start_backend() {
         log_info "Falling back to go run..."
         KUBECONFIG="${KUBECONFIG:-$HOME/.kube/config}" \
         VELERO_NAMESPACE="${VELERO_NAMESPACE:-velero}" \
+        CLUSTER_STORAGE_TYPE="${CLUSTER_STORAGE_TYPE:-sqlite}" \
+        CLUSTER_DB_PATH="${CLUSTER_DB_PATH:-./clusters.db}" \
+        CLUSTER_ENCRYPTION_KEY="$CLUSTER_ENCRYPTION_KEY" \
         SERVER_PORT=8080 \
-        SERVER_ALLOWED_ORIGINS="http://localhost:3000" \
+        SERVER_ALLOWED_ORIGINS="http://localhost:3000,http://localhost:3001" \
         go run ./cmd/server &
         log_success "Backend started on :8080 (no hot-reload)"
     fi
@@ -231,11 +243,18 @@ case "$1" in
         echo "  test      - Run all tests (Go + Vitest)"
         echo ""
         echo "Environment:"
-        echo "  KUBECONFIG         Path to kubeconfig (default: ~/.kube/config)"
-        echo "  VELERO_NAMESPACE   Velero namespace (default: velero)"
+        echo "  KUBECONFIG               Path to kubeconfig (default: ~/.kube/config) - For auto-migration"
+        echo "  VELERO_NAMESPACE         Velero namespace (default: velero) - For auto-migration"
+        echo "  CLUSTER_STORAGE_TYPE     Storage type: sqlite/kubernetes (default: sqlite)"
+        echo "  CLUSTER_DB_PATH          SQLite DB path (default: ./clusters.db)"
+        echo "  CLUSTER_ENCRYPTION_KEY   32-byte encryption key (auto-generated if not set)"
+        echo ""
+        echo "Multi-Cluster Support:"
+        echo "  If KUBECONFIG is set and no clusters exist in DB, a default cluster will be auto-created."
+        echo "  Otherwise, add clusters via the UI at http://localhost:3001/clusters"
         echo ""
         echo "Examples:"
-        echo "  $0 all                                    # Start everything"
+        echo "  $0 all                                    # Start everything with auto-migration"
         echo "  VELERO_NAMESPACE=backup $0 backend        # Custom namespace"
         echo "  $0 test                                   # Run all tests"
         exit 1

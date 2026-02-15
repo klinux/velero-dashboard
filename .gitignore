@@ -11,6 +11,7 @@
 Thumbs.db
 
 # Build artifacts
+bin/
 dist/
 build/
 *.exe
@@ -56,6 +57,14 @@ credentials.json
 # Kubernetes
 kubeconfig
 *.kubeconfig
+
+# Multi-cluster database & encryption
+clusters.db
+clusters.db-*
+webhooks.db
+webhooks.db-*
+.encryption_key
+backend.log
 
 # Docker
 .dockerignore

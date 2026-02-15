@@ -1,9 +1,11 @@
 package k8s
 
 import (
+	"context"
 	"fmt"
 
 	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
@@ -88,4 +90,63 @@ func (c *Client) Namespace() string {
 // Dynamic returns the underlying dynamic client (used by informers).
 func (c *Client) Dynamic() dynamic.Interface {
 	return c.dynamic
+}
+
+// NewClientFromKubeconfig creates a client from raw kubeconfig bytes
+func NewClientFromKubeconfig(kubeconfigData []byte, namespace string, logger *zap.Logger) (*Client, error) {
+	cfg, err := clientcmd.RESTConfigFromKubeConfig(kubeconfigData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse kubeconfig: %w", err)
+	}
+
+	dynClient, err := dynamic.NewForConfig(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
+	logger.Info("Created client from kubeconfig", zap.String("namespace", namespace))
+
+	return &Client{
+		dynamic:   dynClient,
+		namespace: namespace,
+		logger:    logger,
+	}, nil
+}
+
+// NewClientFromToken creates a client from API server URL and bearer token
+func NewClientFromToken(apiServer, token, caCert, namespace string, insecureSkipTLS bool, logger *zap.Logger) (*Client, error) {
+	cfg := &rest.Config{
+		Host:        apiServer,
+		BearerToken: token,
+		TLSClientConfig: rest.TLSClientConfig{
+			Insecure: insecureSkipTLS,
+		},
+	}
+
+	// Add CA cert if provided
+	if caCert != "" && !insecureSkipTLS {
+		cfg.TLSClientConfig.CAData = []byte(caCert)
+	}
+
+	dynClient, err := dynamic.NewForConfig(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create dynamic client: %w", err)
+	}
+
+	logger.Info("Created client from token", zap.String("apiServer", apiServer), zap.String("namespace", namespace))
+
+	return &Client{
+		dynamic:   dynClient,
+		namespace: namespace,
+		logger:    logger,
+	}, nil
+}
+
+// TestConnection verifies cluster connectivity by listing backups
+func (c *Client) TestConnection(ctx context.Context) error {
+	_, err := c.dynamic.Resource(BackupGVR).Namespace(c.namespace).List(ctx, metav1.ListOptions{Limit: 1})
+	if err != nil {
+		return fmt.Errorf("connection test failed: %w", err)
+	}
+	return nil
 }

@@ -63,6 +63,13 @@ spec:
             - name: OIDC_DEFAULT_ROLE
               value: "{{ .Values.auth.oidc.defaultRole }}"
             {{- end }}
+            # Multi-cluster storage
+            - name: CLUSTER_STORAGE_TYPE
+              value: "{{ .Values.cluster.storageType }}"
+            - name: CLUSTER_K8S_NAMESPACE
+              value: "{{ .Values.velero.namespace }}"
+            - name: CLUSTER_CONFIGMAP_NAME
+              value: "{{ .Values.cluster.configMapName }}"
           livenessProbe:
             httpGet:
               path: /healthz
@@ -79,5 +86,4 @@ spec:
             {{- toYaml .Values.backend.resources | nindent 12 }}
           securityContext:
             runAsNonRoot: true
-            readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false

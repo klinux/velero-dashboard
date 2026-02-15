@@ -1,9 +1,19 @@
+{{- if .Values.rbac.namespaced }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "velero-dashboard.fullname" . }}
+  namespace: {{ .Values.velero.namespace }}
+  labels:
+    {{- include "velero-dashboard.labels" . | nindent 4 }}
+{{- else }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: {{ include "velero-dashboard.fullname" . }}
   labels:
     {{- include "velero-dashboard.labels" . | nindent 4 }}
+{{- end }}
 rules:
   - apiGroups: ["velero.io"]
     resources:
@@ -17,4 +27,15 @@ rules:
       - serverstatusrequests
       - podvolumebackups
       - podvolumerestores
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Core resources (pods, namespaces, PVs)
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "namespaces", "persistentvolumes", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch"]
+  # Dashboard cluster storage (ConfigMap + Secrets for multi-cluster config)
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

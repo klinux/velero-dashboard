@@ -6,17 +6,22 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
+	"github.com/gofiber/adaptor/v2"
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/klinux/velero-dashboard/internal/auth"
+	"github.com/klinux/velero-dashboard/internal/cluster"
 	"github.com/klinux/velero-dashboard/internal/config"
 	"github.com/klinux/velero-dashboard/internal/handler"
-	"github.com/klinux/velero-dashboard/internal/k8s"
 	"github.com/klinux/velero-dashboard/internal/middleware"
+	"github.com/klinux/velero-dashboard/internal/notification"
 	"github.com/klinux/velero-dashboard/internal/ws"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 )
 
@@ -29,20 +34,78 @@ func main() {
 		zapLogger.Fatal("Failed to load config", zap.Error(err))
 	}
 
-	k8sClient, err := k8s.NewClient(cfg.Kubeconfig, cfg.Velero.Namespace, zapLogger)
+	// Initialize cluster store (SQLite or Kubernetes ConfigMap+Secrets)
+	storeConfig := cluster.StoreConfig{
+		StorageType:   cfg.Cluster.StorageType,
+		DBPath:        cfg.Cluster.DBPath,
+		EncryptionKey: cfg.Cluster.EncryptionKey,
+		Namespace:     cfg.Cluster.Namespace,
+		ConfigMapName: cfg.Cluster.ConfigMapName,
+	}
+	clusterStore, err := cluster.NewStore(storeConfig, zapLogger)
 	if err != nil {
-		zapLogger.Fatal("Failed to create K8s client", zap.Error(err))
+		zapLogger.Fatal("Failed to create cluster store", zap.Error(err))
 	}
 
-	hub := ws.NewHub(zapLogger)
-	handlers := handler.NewHandlers(k8sClient, hub, zapLogger)
+	// Initialize notification store (reuses same storage type)
+	notifStore, err := notification.NewStore(notification.StoreConfig{
+		StorageType: cfg.Cluster.StorageType,
+		DBPath:      cfg.Cluster.DBPath,
+		Namespace:   cfg.Cluster.Namespace,
+	}, zapLogger)
+	if err != nil {
+		zapLogger.Fatal("Failed to create notification store", zap.Error(err))
+	}
+	notifMgr := notification.NewManager(notifStore, zapLogger)
 
-	// Start informers for real-time updates
+	hub := ws.NewHub(zapLogger)
+
+	// Initialize cluster manager
+	clusterMgr := cluster.NewManager(clusterStore, hub, zapLogger)
+	clusterMgr.SetNotifier(notification.NewAdapter(notifMgr))
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	informerMgr := k8s.NewInformerManager(k8sClient, hub, zapLogger)
-	go informerMgr.Start(ctx)
+	// Start cluster manager (connects to all clusters and starts informers)
+	if err := clusterMgr.Start(ctx); err != nil {
+		zapLogger.Fatal("Failed to start cluster manager", zap.Error(err))
+	}
+
+	// MIGRATION: If no clusters exist and legacy config present, auto-migrate
+	clusters, _ := clusterStore.List(ctx)
+	if len(clusters) == 0 && cfg.Kubeconfig != "" {
+		zapLogger.Info("Migrating legacy single-cluster configuration", zap.String("kubeconfig", cfg.Kubeconfig))
+
+		// Read kubeconfig file contents (not just the path)
+		kubeconfigData, err := os.ReadFile(cfg.Kubeconfig)
+		if err != nil {
+			zapLogger.Error("Failed to read kubeconfig file for migration", zap.Error(err))
+		} else {
+			req := cluster.CreateClusterRequest{
+				Name:         "default",
+				Kubeconfig:   string(kubeconfigData), // Pass contents, not path
+				Namespace:    cfg.Velero.Namespace,
+				SetAsDefault: true,
+			}
+			newCluster, err := clusterStore.Create(ctx, req)
+			if err == nil {
+				_ = clusterMgr.AddCluster(ctx, newCluster)
+				zapLogger.Info("Legacy configuration migrated successfully")
+			} else {
+				zapLogger.Error("Failed to migrate legacy configuration", zap.Error(err))
+			}
+		}
+	}
+
+	// Start reconciliation loop (watches for externally created/deleted cluster Secrets)
+	go func() {
+		if err := clusterMgr.StartReconciliation(ctx); err != nil {
+			zapLogger.Warn("Cluster reconciliation failed", zap.Error(err))
+		}
+	}()
+
+	handlers := handler.NewHandlers(clusterMgr, hub, notifMgr, zapLogger)
 
 	// Initialize auth provider
 	jwtMgr := auth.NewJWTManager(cfg.Auth.JWTSecret, cfg.Auth.JWTExpiration)
@@ -60,12 +123,31 @@ func main() {
 	app.Use(recover.New())
 	app.Use(logger.New())
 	app.Use(middleware.NewCORS(cfg.Server.AllowedOrigins))
+	app.Use(middleware.NewMetrics())
+
+	// Rate limiter: 100 requests per minute per IP
+	app.Use(limiter.New(limiter.Config{
+		Max:        100,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Rate limit exceeded. Try again later.",
+			})
+		},
+		SkipFailedRequests: true,
+	}))
 
 	// ── Public routes (no auth) ─────────────────────────────────
 
 	app.Get("/healthz", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
+
+	// Prometheus metrics endpoint (no auth)
+	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 
 	// Auth config endpoint — frontend needs to know which mode to render
 	app.Get("/api/auth/config", func(c *fiber.Ctx) error {
@@ -84,6 +166,7 @@ func main() {
 
 	api.Get("/backups", handlers.Backup.List)
 	api.Get("/backups/compare", handlers.Backup.Compare)
+	api.Get("/backups/shared", handlers.CrossCluster.SharedBackups)
 	api.Get("/backups/:name", handlers.Backup.Get)
 	api.Get("/backups/:name/logs", handlers.Backup.Logs)
 
@@ -102,12 +185,29 @@ func main() {
 	operator.Post("/backups", handlers.Backup.Create)
 	operator.Delete("/backups/:name", handlers.Backup.Delete)
 	operator.Post("/restores", handlers.Restore.Create)
+	operator.Post("/restores/cross-cluster", handlers.CrossCluster.CreateCrossClusterRestore)
 	operator.Post("/schedules", handlers.Schedule.Create)
 	operator.Patch("/schedules/:name", handlers.Schedule.TogglePause)
 	operator.Delete("/schedules/:name", handlers.Schedule.Delete)
 
 	// Admin-level routes (admin only)
 	admin := api.Group("", auth.RequireRole(auth.RoleAdmin))
+
+	// Cluster management (admin only)
+	admin.Get("/clusters", handlers.Cluster.List)
+	admin.Get("/clusters/:id", handlers.Cluster.Get)
+	admin.Post("/clusters", handlers.Cluster.Create)
+	admin.Patch("/clusters/:id", handlers.Cluster.Update)
+	admin.Delete("/clusters/:id", handlers.Cluster.Delete)
+
+	// Webhook notifications (admin only)
+	admin.Get("/notifications/webhooks", handlers.Notification.ListWebhooks)
+	admin.Post("/notifications/webhooks", handlers.Notification.CreateWebhook)
+	admin.Patch("/notifications/webhooks/:id", handlers.Notification.UpdateWebhook)
+	admin.Delete("/notifications/webhooks/:id", handlers.Notification.DeleteWebhook)
+	admin.Post("/notifications/webhooks/:id/test", handlers.Notification.TestWebhook)
+
+	// Storage locations
 	admin.Post("/settings/backup-locations", handlers.Settings.CreateBackupLocation)
 	admin.Patch("/settings/backup-locations/:name", handlers.Settings.UpdateBackupLocation)
 	admin.Delete("/settings/backup-locations/:name", handlers.Settings.DeleteBackupLocation)
@@ -133,6 +233,8 @@ func main() {
 		<-sigCh
 		zapLogger.Info("Shutting down...")
 		cancel()
+		clusterMgr.Shutdown() // Stop all cluster connections and informers
+		_ = notifStore.Close()
 		if err := app.Shutdown(); err != nil {
 			zapLogger.Error("Shutdown error", zap.Error(err))
 		}

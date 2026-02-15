@@ -29,23 +29,25 @@ type BackupResponse struct {
 
 // RestoreResponse is the DTO returned by the API for a Velero Restore.
 type RestoreResponse struct {
-	Name               string            `json:"name"`
-	Namespace          string            `json:"namespace"`
-	Phase              string            `json:"phase"`
-	Errors             int64             `json:"errors"`
-	Warnings           int64             `json:"warnings"`
-	BackupName         string            `json:"backupName"`
-	Created            *time.Time        `json:"created,omitempty"`
-	Started            *time.Time        `json:"started,omitempty"`
-	Completed          *time.Time        `json:"completed,omitempty"`
-	IncludedNamespaces []string          `json:"includedNamespaces,omitempty"`
-	ExcludedNamespaces []string          `json:"excludedNamespaces,omitempty"`
-	IncludedResources  []string          `json:"includedResources,omitempty"`
-	ExcludedResources  []string          `json:"excludedResources,omitempty"`
-	RestorePVs         *bool             `json:"restorePVs,omitempty"`
-	Labels             map[string]string `json:"labels,omitempty"`
-	ItemsRestored      int64             `json:"itemsRestored"`
-	TotalItems         int64             `json:"totalItems"`
+	Name                   string            `json:"name"`
+	Namespace              string            `json:"namespace"`
+	Phase                  string            `json:"phase"`
+	Errors                 int64             `json:"errors"`
+	Warnings               int64             `json:"warnings"`
+	BackupName             string            `json:"backupName"`
+	Created                *time.Time        `json:"created,omitempty"`
+	Started                *time.Time        `json:"started,omitempty"`
+	Completed              *time.Time        `json:"completed,omitempty"`
+	IncludedNamespaces     []string          `json:"includedNamespaces,omitempty"`
+	ExcludedNamespaces     []string          `json:"excludedNamespaces,omitempty"`
+	IncludedResources      []string          `json:"includedResources,omitempty"`
+	ExcludedResources      []string          `json:"excludedResources,omitempty"`
+	RestorePVs             *bool             `json:"restorePVs,omitempty"`
+	ExistingResourcePolicy string            `json:"existingResourcePolicy,omitempty"`
+	NamespaceMapping       map[string]string `json:"namespaceMapping,omitempty"`
+	Labels                 map[string]string `json:"labels,omitempty"`
+	ItemsRestored          int64             `json:"itemsRestored"`
+	TotalItems             int64             `json:"totalItems"`
 }
 
 // ScheduleResponse is the DTO returned by the API for a Velero Schedule.
@@ -117,14 +119,15 @@ type CreateBackupRequest struct {
 
 // CreateRestoreRequest is the payload for creating a restore.
 type CreateRestoreRequest struct {
-	Name               string            `json:"name"`
-	BackupName         string            `json:"backupName"`
-	IncludedNamespaces []string          `json:"includedNamespaces,omitempty"`
-	ExcludedNamespaces []string          `json:"excludedNamespaces,omitempty"`
-	IncludedResources  []string          `json:"includedResources,omitempty"`
-	ExcludedResources  []string          `json:"excludedResources,omitempty"`
-	RestorePVs         *bool             `json:"restorePVs,omitempty"`
-	NamespaceMapping   map[string]string `json:"namespaceMapping,omitempty"`
+	Name                   string            `json:"name"`
+	BackupName             string            `json:"backupName"`
+	IncludedNamespaces     []string          `json:"includedNamespaces,omitempty"`
+	ExcludedNamespaces     []string          `json:"excludedNamespaces,omitempty"`
+	IncludedResources      []string          `json:"includedResources,omitempty"`
+	ExcludedResources      []string          `json:"excludedResources,omitempty"`
+	RestorePVs             *bool             `json:"restorePVs,omitempty"`
+	NamespaceMapping       map[string]string `json:"namespaceMapping,omitempty"`
+	ExistingResourcePolicy string            `json:"existingResourcePolicy,omitempty"` // "none" or "update"
 }
 
 // CreateScheduleRequest is the payload for creating a schedule.
@@ -187,11 +190,26 @@ type UpdateVolumeSnapshotLocationRequest struct {
 	Config     map[string]string `json:"config,omitempty"`     // Additional provider-specific config
 }
 
+// CrossClusterBackup represents a backup accessible from another cluster via shared BSL.
+type CrossClusterBackup struct {
+	BackupResponse
+	SourceClusterID   string `json:"sourceClusterId"`
+	SourceClusterName string `json:"sourceClusterName"`
+}
+
+// CrossClusterRestoreRequest extends CreateRestoreRequest with cluster selection.
+type CrossClusterRestoreRequest struct {
+	SourceClusterID string `json:"sourceClusterId"`
+	TargetClusterID string `json:"targetClusterId"`
+	CreateRestoreRequest
+}
+
 // WSEvent is a WebSocket message sent to clients on resource changes.
 type WSEvent struct {
-	Type     string      `json:"type"`     // "backup", "restore", "schedule", "bsl"
-	Action   string      `json:"action"`   // "added", "modified", "deleted"
-	Resource interface{} `json:"resource"` // The DTO
+	Type      string      `json:"type"`      // "backup", "restore", "schedule", "bsl"
+	Action    string      `json:"action"`    // "added", "modified", "deleted"
+	Resource  interface{} `json:"resource"`  // The DTO
+	ClusterID string      `json:"clusterId"` // Cluster identifier for multi-cluster support
 }
 
 // BackupComparisonResponse is the DTO returned when comparing two backups.

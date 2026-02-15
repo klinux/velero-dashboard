@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "velero-dashboard.fullname" . }}-test-connection"
+  namespace: {{ .Values.velero.namespace }}
+  labels:
+    {{- include "velero-dashboard.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: test-backend-health
+      image: busybox:1.37
+      command: ['sh', '-c']
+      args:
+        - |
+          echo "Testing backend health endpoint..."
+          for i in $(seq 1 30); do
+            if wget -qO- http://{{ include "velero-dashboard.fullname" . }}-backend:{{ .Values.backend.port }}/healthz 2>/dev/null | grep -q '"status":"ok"'; then
+              echo "Backend health check passed!"
+              exit 0
+            fi
+            echo "Attempt $i/30 - waiting..."
+            sleep 2
+          done
+          echo "Backend health check failed after 30 attempts"
+          exit 1
+    - name: test-frontend-health
+      image: busybox:1.37
+      command: ['sh', '-c']
+      args:
+        - |
+          echo "Testing frontend connectivity..."
+          for i in $(seq 1 30); do
+            if wget -qO- http://{{ include "velero-dashboard.fullname" . }}-frontend:{{ .Values.frontend.port }}/ 2>/dev/null | grep -q 'html'; then
+              echo "Frontend connectivity check passed!"
+              exit 0
+            fi
+            echo "Attempt $i/30 - waiting..."
+            sleep 2
+          done
+          echo "Frontend connectivity check failed after 30 attempts"
+          exit 1
+    - name: test-metrics
+      image: busybox:1.37
+      command: ['sh', '-c']
+      args:
+        - |
+          echo "Testing metrics endpoint..."
+          for i in $(seq 1 30); do
+            if wget -qO- http://{{ include "velero-dashboard.fullname" . }}-backend:{{ .Values.backend.port }}/metrics 2>/dev/null | grep -q 'velero_dashboard'; then
+              echo "Metrics endpoint check passed!"
+              exit 0
+            fi
+            echo "Attempt $i/30 - waiting..."
+            sleep 2
+          done
+          echo "Metrics endpoint check failed after 30 attempts"
+          exit 1

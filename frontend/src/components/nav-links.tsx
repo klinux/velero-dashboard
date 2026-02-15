@@ -7,6 +7,7 @@ import {
   IconDatabaseImport,
   IconCalendarEvent,
   IconSettings,
+  IconServer,
 } from "@tabler/icons-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -18,6 +19,7 @@ const links = [
   { href: "/restores", label: "Restores", icon: IconDatabaseImport, minRole: null },
   { href: "/schedules", label: "Schedules", icon: IconCalendarEvent, minRole: null },
   { href: "/settings", label: "Settings", icon: IconSettings, minRole: "admin" as const },
+  { href: "/clusters", label: "Clusters", icon: IconServer, minRole: "admin" as const },
 ];
 
 export function NavLinks() {

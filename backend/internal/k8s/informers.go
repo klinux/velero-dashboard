@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/klinux/velero-dashboard/internal/ws"
@@ -15,19 +16,45 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// InformerManager runs informers for Velero CRDs and broadcasts changes via WebSocket.
-type InformerManager struct {
-	client *Client
-	hub    *ws.Hub
-	logger *zap.Logger
+// EventNotifier is an interface for dispatching notification events.
+// This decouples the informer package from the notification package.
+type EventNotifier interface {
+	Dispatch(ctx context.Context, event NotificationPayload)
 }
 
-func NewInformerManager(client *Client, hub *ws.Hub, logger *zap.Logger) *InformerManager {
+// NotificationPayload carries the data needed for a notification dispatch.
+type NotificationPayload struct {
+	EventType   string // e.g. "backup_failed", "restore_failed", "bsl_unavailable"
+	Title       string
+	Message     string
+	ClusterID   string
+	ClusterName string
+	Resource    interface{}
+}
+
+// InformerManager runs informers for Velero CRDs and broadcasts changes via WebSocket.
+type InformerManager struct {
+	client      *Client
+	hub         *ws.Hub
+	notifier    EventNotifier
+	clusterID   string
+	clusterName string
+	logger      *zap.Logger
+}
+
+func NewInformerManager(client *Client, hub *ws.Hub, clusterID string, clusterName string, logger *zap.Logger) *InformerManager {
 	return &InformerManager{
-		client: client,
-		hub:    hub,
-		logger: logger,
+		client:      client,
+		hub:         hub,
+		clusterID:   clusterID,
+		clusterName: clusterName,
+		logger:      logger,
 	}
+}
+
+// SetNotifier sets the notification dispatcher (optional).
+func (im *InformerManager) SetNotifier(n EventNotifier) {
+	im.notifier = n
 }
 
 // Start begins watching all Velero resources. Blocks until ctx is cancelled.
@@ -140,10 +167,13 @@ func (im *InformerManager) runWatchLoop(
 				continue
 			}
 
+			parsed := parser(*obj)
+
 			wsEvent := WSEvent{
-				Type:     typeName,
-				Action:   action,
-				Resource: parser(*obj),
+				Type:      typeName,
+				Action:    action,
+				Resource:  parsed,
+				ClusterID: im.clusterID,
 			}
 
 			im.hub.Broadcast(wsEvent)
@@ -152,10 +182,66 @@ func (im *InformerManager) runWatchLoop(
 				zap.String("action", action),
 				zap.String("name", obj.GetName()),
 			)
+
+			// Dispatch notifications for failure events
+			if im.notifier != nil && (action == "added" || action == "modified") {
+				im.checkAndNotify(typeName, obj, parsed)
+			}
 		}
 
 		im.logger.Warn("Watch channel closed, restarting", zap.String("resource", typeName))
 		time.Sleep(2 * time.Second)
+	}
+}
+
+// checkAndNotify dispatches notifications for failure conditions.
+func (im *InformerManager) checkAndNotify(typeName string, obj *unstructured.Unstructured, parsed interface{}) {
+	phase := nestedString(obj.Object, "status", "phase")
+	name := obj.GetName()
+
+	var payload *NotificationPayload
+
+	switch typeName {
+	case "backup":
+		if phase == "Failed" {
+			payload = &NotificationPayload{
+				EventType: "backup_failed",
+				Title:     "Backup Failed",
+				Message:   fmt.Sprintf("Backup \"%s\" failed", name),
+				Resource:  parsed,
+			}
+		} else if phase == "PartiallyFailed" {
+			payload = &NotificationPayload{
+				EventType: "backup_partially_failed",
+				Title:     "Backup Partially Failed",
+				Message:   fmt.Sprintf("Backup \"%s\" completed with errors", name),
+				Resource:  parsed,
+			}
+		}
+	case "restore":
+		if phase == "Failed" || phase == "PartiallyFailed" {
+			payload = &NotificationPayload{
+				EventType: "restore_failed",
+				Title:     "Restore Failed",
+				Message:   fmt.Sprintf("Restore \"%s\" failed", name),
+				Resource:  parsed,
+			}
+		}
+	case "bsl":
+		if phase == "Unavailable" {
+			payload = &NotificationPayload{
+				EventType: "bsl_unavailable",
+				Title:     "Backup Storage Location Unavailable",
+				Message:   fmt.Sprintf("BSL \"%s\" is unavailable", name),
+				Resource:  parsed,
+			}
+		}
+	}
+
+	if payload != nil {
+		payload.ClusterID = im.clusterID
+		payload.ClusterName = im.clusterName
+		go im.notifier.Dispatch(context.Background(), *payload)
 	}
 }
 

@@ -37,6 +37,8 @@ export interface Restore {
   includedResources?: string[];
   excludedResources?: string[];
   restorePVs?: boolean;
+  existingResourcePolicy?: string;
+  namespaceMapping?: Record<string, string>;
   labels?: Record<string, string>;
   itemsRestored: number;
   totalItems: number;
@@ -113,6 +115,7 @@ export interface CreateRestoreRequest {
   excludedResources?: string[];
   restorePVs?: boolean;
   namespaceMapping?: Record<string, string>;
+  existingResourcePolicy?: "none" | "update";
 }
 
 export interface CreateScheduleRequest {
@@ -170,10 +173,44 @@ export interface UpdateVolumeSnapshotLocationRequest {
   config?: Record<string, string>; // Additional provider-specific config
 }
 
+export interface Cluster {
+  id: string;
+  name: string;
+  namespace: string;
+  status: "connected" | "disconnected" | "error";
+  statusMessage?: string;
+  isDefault: boolean;
+  createdAt: string;
+  lastHealthCheck: string;
+}
+
+export interface CreateClusterRequest {
+  name: string;
+  namespace: string;
+  setAsDefault: boolean;
+
+  // Auth Mode 1: Kubeconfig (traditional)
+  kubeconfig?: string;
+
+  // Auth Mode 2: Token-based (alternative)
+  apiServer?: string;
+  token?: string;
+  caCert?: string;
+  insecureSkipTLS?: boolean;
+}
+
+export interface UpdateClusterRequest {
+  name?: string;
+  kubeconfig?: string;
+  namespace?: string;
+  setAsDefault?: boolean;
+}
+
 export interface WSEvent {
   type: "backup" | "restore" | "schedule" | "bsl";
   action: "added" | "modified" | "deleted";
   resource: Backup | Restore | Schedule | BackupStorageLocation;
+  clusterId?: string;
 }
 
 export interface BackupComparisonResponse {
@@ -211,4 +248,53 @@ export interface BackupDiff {
   sameConfiguration: boolean;
   storageLocationDiff: boolean;
   ttlDiff: boolean;
+}
+
+// Webhook Notifications
+export type WebhookType = "slack" | "teams" | "discord" | "webhook";
+export type NotificationEventType =
+  | "backup_failed"
+  | "backup_partially_failed"
+  | "restore_failed"
+  | "bsl_unavailable";
+
+export interface WebhookConfig {
+  id: string;
+  name: string;
+  type: WebhookType;
+  url: string;
+  events: NotificationEventType[];
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastSentAt?: string;
+  lastStatus?: string;
+  lastError?: string;
+}
+
+export interface CreateWebhookRequest {
+  name: string;
+  type: WebhookType;
+  url: string;
+  events: NotificationEventType[];
+  enabled: boolean;
+}
+
+export interface UpdateWebhookRequest {
+  name?: string;
+  type?: WebhookType;
+  url?: string;
+  events?: NotificationEventType[];
+  enabled?: boolean;
+}
+
+// Cross-Cluster Restore
+export interface CrossClusterBackup extends Backup {
+  sourceClusterId: string;
+  sourceClusterName: string;
+}
+
+export interface CrossClusterRestoreRequest extends CreateRestoreRequest {
+  sourceClusterId: string;
+  targetClusterId: string;
 }
