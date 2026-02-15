@@ -109,6 +109,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout gh-pages branch
+        id: checkout-pages
         uses: actions/checkout@v6
         with:
           ref: gh-pages
@@ -117,17 +118,17 @@ jobs:
         continue-on-error: true
 
       - name: Initialize gh-pages if missing
+        if: steps.checkout-pages.outcome == 'failure'
         run: |
-          if [ ! -d "gh-pages/.git" ]; then
-            mkdir -p gh-pages
-            cd gh-pages
-            git init -b gh-pages
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-            git commit --allow-empty -m "Initialize gh-pages for Helm chart repo"
-            git push -u origin gh-pages
-          fi
+          rm -rf gh-pages
+          mkdir -p gh-pages
+          cd gh-pages
+          git init -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          git commit --allow-empty -m "Initialize gh-pages for Helm chart repo"
+          git push -u origin gh-pages
 
       - name: Update Helm repo index
         run: |
