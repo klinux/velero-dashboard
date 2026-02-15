@@ -31,7 +31,7 @@ export function EditBSLModal({ opened, onClose, onSuccess, onSubmit, bsl }: Edit
         default: bsl.default || false,
       });
     }
-  }, [bsl]);
+  }, [bsl, form]);
 
   const handleSubmit = async (values: UpdateBackupStorageLocationRequest) => {
     if (!bsl) return;
@@ -46,10 +46,10 @@ export function EditBSLModal({ opened, onClose, onSuccess, onSubmit, bsl }: Edit
       form.reset();
       onClose();
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       notifications.show({
         title: "Error",
-        message: error.message || "Failed to update backup storage location",
+        message: error instanceof Error ? error.message : "Failed to update backup storage location",
         color: "red",
       });
     }

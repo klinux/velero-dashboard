@@ -45,10 +45,10 @@ export function CreateVSLModal({ opened, onClose, onSuccess, onSubmit }: CreateV
       form.reset();
       onClose();
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       notifications.show({
         title: "Error",
-        message: error.message || "Failed to create volume snapshot location",
+        message: error instanceof Error ? error.message : "Failed to create volume snapshot location",
         color: "red",
       });
     }

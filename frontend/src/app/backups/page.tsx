@@ -1,6 +1,6 @@
 "use client";
 
-import { Title, Stack, Group, Button, Badge, Select, Modal } from "@mantine/core";
+import { Title, Stack, Group, Button, Select, Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconPlus } from "@tabler/icons-react";

@@ -24,7 +24,6 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { compareBackups } from "@/lib/api";
 import { formatBytes, formatDate } from "@/lib/utils";
-import type { BackupSummary, BackupDiff } from "@/lib/types";
 
 interface CompareBackupsModalProps {
   opened: boolean;

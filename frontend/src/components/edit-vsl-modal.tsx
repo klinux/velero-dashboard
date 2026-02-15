@@ -27,7 +27,7 @@ export function EditVSLModal({ opened, onClose, onSuccess, onSubmit, vsl }: Edit
         credential: "",
       });
     }
-  }, [vsl]);
+  }, [vsl, form]);
 
   const handleSubmit = async (values: UpdateVolumeSnapshotLocationRequest) => {
     if (!vsl) return;
@@ -42,10 +42,10 @@ export function EditVSLModal({ opened, onClose, onSuccess, onSubmit, vsl }: Edit
       form.reset();
       onClose();
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       notifications.show({
         title: "Error",
-        message: error.message || "Failed to update volume snapshot location",
+        message: error instanceof Error ? error.message : "Failed to update volume snapshot location",
         color: "red",
       });
     }

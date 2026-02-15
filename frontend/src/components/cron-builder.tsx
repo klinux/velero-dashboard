@@ -65,7 +65,7 @@ function describeCron(cron: string): string {
   const parts = cron.split(" ");
   if (parts.length !== 5) return "Invalid cron expression";
 
-  const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
+  const [minute, hour, dayOfMonth, , dayOfWeek] = parts;
 
   // Check presets first
   const preset = PRESETS.find((p) => p.value === cron);

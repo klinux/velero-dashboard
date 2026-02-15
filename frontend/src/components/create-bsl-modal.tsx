@@ -65,10 +65,10 @@ export function CreateBSLModal({ opened, onClose, onSuccess, onSubmit }: CreateB
       form.reset();
       onClose();
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       notifications.show({
         title: "Error",
-        message: error.message || "Failed to create backup storage location",
+        message: error instanceof Error ? error.message : "Failed to create backup storage location",
         color: "red",
       });
     }

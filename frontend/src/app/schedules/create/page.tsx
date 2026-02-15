@@ -11,8 +11,6 @@ import {
   Group,
   Switch,
   Anchor,
-  Code,
-  Text,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";

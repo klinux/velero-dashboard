@@ -140,7 +140,7 @@ Groups from the OIDC token's `groups` claim are mapped to roles. Users matching 
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | Go 1.24, Fiber, client-go, zap |
+| Backend | Go 1.25, Fiber, client-go, zap |
 | Frontend | Next.js 15, Mantine v7, React Query, mantine-datatable |
 | Real-time | WebSocket (Fiber + native browser API) |
 | Deployment | Helm chart, Docker (distroless), RBAC |
@@ -150,7 +150,7 @@ Groups from the OIDC token's `groups` claim are mapped to roles. Users matching 
 
 ### Prerequisites
 
-- **Go** 1.24+
+- **Go** 1.23+
 - **Node.js** 22+
 - **kubectl** configured with access to a cluster running Velero
 - **air** (optional, for backend hot-reload): `go install github.com/air-verse/air@latest`
