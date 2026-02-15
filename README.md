@@ -38,7 +38,7 @@ A modern web dashboard for managing [Velero](https://velero.io/) backups in Kube
 ### Storage Configuration
 <table>
   <tr>
-    <td><img src="images/settings.png" alt="Settings" width="400"/></td>
+    <td><img src="images/setting.png" alt="Settings" width="400"/></td>
     <td><img src="images/add_bsl.png" alt="Add BSL" width="400"/></td>
   </tr>
   <tr>
