@@ -124,11 +124,11 @@ Groups from the OIDC token's `groups` claim are mapped to roles. Users matching 
                                                       │
                                               K8s Dynamic Client
                                                       │
-                                              ┌────────▼─────────┐
-                                              │ Kubernetes API   │
-                                              │ Velero CRDs      │
-                                              │ (velero.io/v1)   │
-                                              └──────────────────┘
+                                             ┌────────▼─────────┐
+                                             │ Kubernetes API   │
+                                             │ Velero CRDs      │
+                                             │ (velero.io/v1)   │
+                                             └──────────────────┘
 ```
 
 **Key design decisions:**
