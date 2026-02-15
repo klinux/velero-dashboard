@@ -1,9 +1,4 @@
-FROM node:25-alpine AS deps
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --only=production
-
-FROM node:25-alpine AS builder
+FROM --platform=$BUILDPLATFORM node:25-alpine AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
