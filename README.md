@@ -116,18 +116,18 @@ Groups from the OIDC token's `groups` claim are mapped to roles. Users matching 
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│   Browser    │────▶│  Next.js Frontend │────▶│  Go Backend API  │
-│  (Mantine)   │     │  :3000 / :3001    │     │  :8080           │
-│              │◀────│                   │◀────│                  │
-│  WebSocket   │     │  React Query      │     │  Fiber + WS      │
+│   Browser   │───▶│ Next.js Frontend │───▶│  Go Backend API  │
+│  (Mantine)  │     │ :3000 / :3001    │     │  :8080           │
+│             │◀───│                  │◀───│                  │
+│  WebSocket  │     │ React Query      │     │  Fiber + WS      │
 └─────────────┘     └──────────────────┘     └────────┬─────────┘
-                                                       │
+                                                      │
                                               K8s Dynamic Client
-                                                       │
+                                                      │
                                               ┌────────▼─────────┐
-                                              │  Kubernetes API   │
-                                              │  Velero CRDs      │
-                                              │  (velero.io/v1)   │
+                                              │ Kubernetes API   │
+                                              │ Velero CRDs      │
+                                              │ (velero.io/v1)   │
                                               └──────────────────┘
 ```
 
