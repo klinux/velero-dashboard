@@ -13,7 +13,7 @@ A modern web dashboard for managing [Velero](https://velero.io/) backups in Kube
 <div align="center">
 
 ### Dashboard Overview
-![Dashboard](images/dashbord.png)
+![Dashboard](images/dashboard.png)
 
 ### Backup Management
 <table>
