@@ -13,7 +13,6 @@ import {
   Button,
   ActionIcon,
   Tooltip,
-  Switch,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconPlus, IconTrash, IconEdit, IconSend, IconBell } from "@tabler/icons-react";

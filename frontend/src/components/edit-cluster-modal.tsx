@@ -57,6 +57,7 @@ export function EditClusterModal({
         setAsDefault: cluster.isDefault,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cluster]);
 
   const handleFileUpload = async (file: File | null) => {
@@ -65,7 +66,7 @@ export function EditClusterModal({
     try {
       const text = await file.text();
       form.setFieldValue("kubeconfig", text);
-    } catch (error) {
+    } catch {
       notifications.show({
         title: "Error",
         message: "Failed to read kubeconfig file",

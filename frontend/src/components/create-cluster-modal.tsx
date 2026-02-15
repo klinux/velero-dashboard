@@ -14,7 +14,7 @@ import {
   PasswordInput,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { IconServer, IconUpload, IconKey, IconLock } from "@tabler/icons-react";
+import { IconServer, IconUpload, IconKey } from "@tabler/icons-react";
 import { useCreateCluster } from "@/hooks/use-clusters";
 import { notifications } from "@mantine/notifications";
 import type { CreateClusterRequest } from "@/lib/types";
@@ -79,7 +79,7 @@ export function CreateClusterModal({ opened, onClose }: CreateClusterModalProps)
     try {
       const text = await file.text();
       form.setFieldValue("kubeconfig", text);
-    } catch (error) {
+    } catch {
       notifications.show({
         title: "Error",
         message: "Failed to read kubeconfig file",
