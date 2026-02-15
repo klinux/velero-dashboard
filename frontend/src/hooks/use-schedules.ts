@@ -5,10 +5,10 @@ import {
   listSchedules,
   getSchedule,
   createSchedule,
-  toggleSchedulePause,
+  updateSchedule,
   deleteSchedule,
 } from "@/lib/api";
-import type { CreateScheduleRequest } from "@/lib/types";
+import type { CreateScheduleRequest, UpdateScheduleRequest } from "@/lib/types";
 import { useClusterStore } from "@/lib/cluster";
 
 export function useSchedules() {
@@ -50,8 +50,20 @@ export function useToggleSchedulePause() {
   const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
 
   return useMutation({
-    mutationFn: (name: string) =>
-      toggleSchedulePause(name, selectedClusterId || undefined),
+    mutationFn: ({ name, currentPaused }: { name: string; currentPaused: boolean }) =>
+      updateSchedule(name, { paused: !currentPaused }, selectedClusterId || undefined),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["schedules", selectedClusterId] }),
+  });
+}
+
+export function useUpdateSchedule() {
+  const queryClient = useQueryClient();
+  const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
+
+  return useMutation({
+    mutationFn: ({ name, data }: { name: string; data: UpdateScheduleRequest }) =>
+      updateSchedule(name, data, selectedClusterId || undefined),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["schedules", selectedClusterId] }),
   });

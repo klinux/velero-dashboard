@@ -20,6 +20,7 @@ import type {
   UpdateWebhookRequest,
   CrossClusterBackup,
   CrossClusterRestoreRequest,
+  UpdateScheduleRequest,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
@@ -159,6 +160,41 @@ export const createRestore = (data: CreateRestoreRequest, clusterId?: string) =>
     method: "POST",
     body: JSON.stringify(data),
   });
+export const deleteRestore = (name: string, clusterId?: string) =>
+  fetchJSON<{ message: string }>(addClusterParam(`/restores/${name}`, clusterId), {
+    method: "DELETE",
+  });
+
+export const getRestoreLogs = async (
+  name: string,
+  clusterId?: string
+): Promise<string> => {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token && token !== "none") {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const path = addClusterParam(`/restores/${name}/logs`, clusterId);
+  const res = await fetch(`${API_BASE}/api${path}`, { headers });
+
+  if (res.status === 401) {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("velero_token");
+      localStorage.removeItem("velero_username");
+      localStorage.removeItem("velero_role");
+      window.location.href = "/login";
+    }
+    throw new Error("Session expired");
+  }
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Failed to fetch logs: ${res.statusText}`);
+  }
+
+  return res.text();
+};
 
 // Schedules
 export const listSchedules = (clusterId?: string) =>
@@ -170,9 +206,10 @@ export const createSchedule = (data: CreateScheduleRequest, clusterId?: string) 
     method: "POST",
     body: JSON.stringify(data),
   });
-export const toggleSchedulePause = (name: string, clusterId?: string) =>
+export const updateSchedule = (name: string, data: UpdateScheduleRequest, clusterId?: string) =>
   fetchJSON<Schedule>(addClusterParam(`/schedules/${name}`, clusterId), {
     method: "PATCH",
+    body: JSON.stringify(data),
   });
 export const deleteSchedule = (name: string, clusterId?: string) =>
   fetchJSON<{ message: string }>(addClusterParam(`/schedules/${name}`, clusterId), {

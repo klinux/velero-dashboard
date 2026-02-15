@@ -147,6 +147,20 @@ type CreateScheduleRequest struct {
 	Paused                  bool     `json:"paused,omitempty"`
 }
 
+// UpdateScheduleRequest is the payload for updating a schedule.
+type UpdateScheduleRequest struct {
+	Schedule           *string  `json:"schedule,omitempty"`
+	Paused             *bool    `json:"paused,omitempty"`
+	IncludedNamespaces []string `json:"includedNamespaces,omitempty"`
+	ExcludedNamespaces []string `json:"excludedNamespaces,omitempty"`
+	IncludedResources  []string `json:"includedResources,omitempty"`
+	ExcludedResources  []string `json:"excludedResources,omitempty"`
+	StorageLocation    *string  `json:"storageLocation,omitempty"`
+	TTL                *string  `json:"ttl,omitempty"`
+	SnapshotVolumes    *bool    `json:"snapshotVolumes,omitempty"`
+	DefaultVolumesToFS *bool    `json:"defaultVolumesToFsBackup,omitempty"`
+}
+
 // CreateBackupStorageLocationRequest is the payload for creating a BSL.
 type CreateBackupStorageLocationRequest struct {
 	Name             string            `json:"name"`

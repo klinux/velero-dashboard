@@ -7,6 +7,7 @@ import { IconPlus } from "@tabler/icons-react";
 import Link from "next/link";
 import { useState } from "react";
 import { ScheduleTable } from "@/components/schedule-table";
+import { ScheduleEditModal } from "@/components/schedule-edit-modal";
 import { TableSearchInput } from "@/components/table-search-input";
 import { ConfirmDelete } from "@/components/confirm-delete";
 import {
@@ -24,6 +25,8 @@ export default function SchedulesPage() {
   const deleteMutation = useDeleteSchedule();
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleteOpened, { open: openDelete, close: closeDelete }] = useDisclosure(false);
+  const [editOpened, { open: openEdit, close: closeEdit }] = useDisclosure(false);
+  const [editTarget, setEditTarget] = useState<string | null>(null);
 
   const {
     search,
@@ -39,8 +42,8 @@ export default function SchedulesPage() {
     searchableFields: ["name", "phase", "schedule", "storageLocation"],
   });
 
-  const handleTogglePause = (name: string) => {
-    togglePause.mutate(name, {
+  const handleTogglePause = (name: string, currentPaused: boolean) => {
+    togglePause.mutate({ name, currentPaused }, {
       onSuccess: (schedule) => {
         notifications.show({
           title: schedule.paused ? "Schedule paused" : "Schedule resumed",
@@ -49,6 +52,11 @@ export default function SchedulesPage() {
         });
       },
     });
+  };
+
+  const handleEdit = (name: string) => {
+    setEditTarget(name);
+    openEdit();
   };
 
   const handleDelete = (name: string) => {
@@ -74,6 +82,10 @@ export default function SchedulesPage() {
     });
   };
 
+  const editScheduleData = editTarget
+    ? (schedules || []).find((s) => s.name === editTarget) || null
+    : null;
+
   return (
     <Stack gap="lg">
       <Group justify="space-between">
@@ -95,12 +107,19 @@ export default function SchedulesPage() {
         schedules={paginatedRecords}
         loading={isLoading}
         onTogglePause={handleTogglePause}
+        onEdit={handleEdit}
         onDelete={handleDelete}
         page={page}
         onPageChange={setPage}
         recordsPerPage={pageSize}
         onRecordsPerPageChange={setPageSize}
         totalRecords={totalRecords}
+      />
+
+      <ScheduleEditModal
+        opened={editOpened}
+        onClose={closeEdit}
+        schedule={editScheduleData}
       />
 
       <ConfirmDelete

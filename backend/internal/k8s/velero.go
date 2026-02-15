@@ -201,6 +201,106 @@ func (c *Client) CreateRestore(ctx context.Context, req CreateRestoreRequest) (*
 	return &r, nil
 }
 
+func (c *Client) DeleteRestore(ctx context.Context, name string) error {
+	err := c.dynamic.Resource(RestoreGVR).Namespace(c.namespace).Delete(ctx, name, metav1.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to delete restore %s: %w", name, err)
+	}
+	c.logger.Info("Restore deleted", zap.String("name", name))
+	return nil
+}
+
+func (c *Client) GetRestoreLogs(ctx context.Context, restoreName string) (string, error) {
+	requestName := fmt.Sprintf("%s-restore-logs-%d", restoreName, time.Now().Unix())
+
+	downloadRequest := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "velero.io/v1",
+			"kind":       "DownloadRequest",
+			"metadata": map[string]interface{}{
+				"name":      requestName,
+				"namespace": c.namespace,
+			},
+			"spec": map[string]interface{}{
+				"target": map[string]interface{}{
+					"kind": "RestoreLog",
+					"name": restoreName,
+				},
+			},
+		},
+	}
+
+	_, err := c.dynamic.Resource(DownloadRequestGVR).Namespace(c.namespace).Create(ctx, downloadRequest, metav1.CreateOptions{})
+	if err != nil {
+		return "", fmt.Errorf("failed to create download request: %w", err)
+	}
+
+	c.logger.Info("Download request created", zap.String("name", requestName), zap.String("restore", restoreName))
+
+	timeout := time.After(30 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	var downloadURL string
+	for {
+		select {
+		case <-timeout:
+			return "", fmt.Errorf("timeout waiting for download request to be ready")
+		case <-ticker.C:
+			dr, err := c.dynamic.Resource(DownloadRequestGVR).Namespace(c.namespace).Get(ctx, requestName, metav1.GetOptions{})
+			if err != nil {
+				continue
+			}
+
+			status, found, _ := unstructured.NestedMap(dr.Object, "status")
+			if !found {
+				continue
+			}
+
+			phase, _, _ := unstructured.NestedString(status, "phase")
+			if phase == "Processed" {
+				url, found, _ := unstructured.NestedString(status, "downloadURL")
+				if found && url != "" {
+					downloadURL = url
+					goto download
+				}
+			}
+		}
+	}
+
+download:
+	resp, err := http.Get(downloadURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to download logs: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	var logBytes []byte
+	if len(bodyBytes) > 2 && bodyBytes[0] == 0x1f && bodyBytes[1] == 0x8b {
+		gzReader, err := gzip.NewReader(strings.NewReader(string(bodyBytes)))
+		if err != nil {
+			return "", fmt.Errorf("failed to create gzip reader: %w", err)
+		}
+		defer func() { _ = gzReader.Close() }()
+
+		logBytes, err = io.ReadAll(gzReader)
+		if err != nil {
+			return "", fmt.Errorf("failed to decompress logs: %w", err)
+		}
+	} else {
+		logBytes = bodyBytes
+	}
+
+	_ = c.dynamic.Resource(DownloadRequestGVR).Namespace(c.namespace).Delete(ctx, requestName, metav1.DeleteOptions{})
+
+	return string(logBytes), nil
+}
+
 // --- Schedules ---
 
 func (c *Client) ListSchedules(ctx context.Context) ([]ScheduleResponse, error) {
@@ -285,21 +385,49 @@ func (c *Client) CreateSchedule(ctx context.Context, req CreateScheduleRequest) 
 	return &s, nil
 }
 
-func (c *Client) ToggleSchedulePause(ctx context.Context, name string) (*ScheduleResponse, error) {
+func (c *Client) UpdateSchedule(ctx context.Context, name string, req UpdateScheduleRequest) (*ScheduleResponse, error) {
 	obj, err := c.dynamic.Resource(ScheduleGVR).Namespace(c.namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get schedule %s: %w", name, err)
 	}
 
-	paused, _, _ := unstructured.NestedBool(obj.Object, "spec", "paused")
-	_ = unstructured.SetNestedField(obj.Object, !paused, "spec", "paused")
+	if req.Schedule != nil {
+		_ = unstructured.SetNestedField(obj.Object, *req.Schedule, "spec", "schedule")
+	}
+	if req.Paused != nil {
+		_ = unstructured.SetNestedField(obj.Object, *req.Paused, "spec", "paused")
+	}
+	if req.IncludedNamespaces != nil {
+		_ = unstructured.SetNestedField(obj.Object, toInterfaceSlice(req.IncludedNamespaces), "spec", "template", "includedNamespaces")
+	}
+	if req.ExcludedNamespaces != nil {
+		_ = unstructured.SetNestedField(obj.Object, toInterfaceSlice(req.ExcludedNamespaces), "spec", "template", "excludedNamespaces")
+	}
+	if req.IncludedResources != nil {
+		_ = unstructured.SetNestedField(obj.Object, toInterfaceSlice(req.IncludedResources), "spec", "template", "includedResources")
+	}
+	if req.ExcludedResources != nil {
+		_ = unstructured.SetNestedField(obj.Object, toInterfaceSlice(req.ExcludedResources), "spec", "template", "excludedResources")
+	}
+	if req.StorageLocation != nil {
+		_ = unstructured.SetNestedField(obj.Object, *req.StorageLocation, "spec", "template", "storageLocation")
+	}
+	if req.TTL != nil {
+		_ = unstructured.SetNestedField(obj.Object, *req.TTL, "spec", "template", "ttl")
+	}
+	if req.SnapshotVolumes != nil {
+		_ = unstructured.SetNestedField(obj.Object, *req.SnapshotVolumes, "spec", "template", "snapshotVolumes")
+	}
+	if req.DefaultVolumesToFS != nil {
+		_ = unstructured.SetNestedField(obj.Object, *req.DefaultVolumesToFS, "spec", "template", "defaultVolumesToFsBackup")
+	}
 
 	updated, err := c.dynamic.Resource(ScheduleGVR).Namespace(c.namespace).Update(ctx, obj, metav1.UpdateOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to toggle schedule pause: %w", err)
+		return nil, fmt.Errorf("failed to update schedule %s: %w", name, err)
 	}
 
-	c.logger.Info("Schedule pause toggled", zap.String("name", name), zap.Bool("paused", !paused))
+	c.logger.Info("Schedule updated", zap.String("name", name))
 	s := parseSchedule(*updated)
 	return &s, nil
 }

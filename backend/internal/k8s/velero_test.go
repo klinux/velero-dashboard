@@ -307,29 +307,48 @@ func TestCreateSchedule(t *testing.T) {
 	}
 }
 
-func TestToggleSchedulePause(t *testing.T) {
+func TestUpdateSchedule(t *testing.T) {
 	client := newTestClient(t,
 		makeSchedule("my-schedule", "0 2 * * *", "Enabled", false),
 	)
 
 	// Pause it
-	schedule, err := client.ToggleSchedulePause(context.Background(), "my-schedule")
+	paused := true
+	schedule, err := client.UpdateSchedule(context.Background(), "my-schedule", UpdateScheduleRequest{
+		Paused: &paused,
+	})
 	if err != nil {
-		t.Fatalf("ToggleSchedulePause failed: %v", err)
+		t.Fatalf("UpdateSchedule (pause) failed: %v", err)
 	}
 
 	if !schedule.Paused {
-		t.Error("expected schedule to be paused after toggle")
+		t.Error("expected schedule to be paused after update")
 	}
 
 	// Unpause it
-	schedule, err = client.ToggleSchedulePause(context.Background(), "my-schedule")
+	unpaused := false
+	schedule, err = client.UpdateSchedule(context.Background(), "my-schedule", UpdateScheduleRequest{
+		Paused: &unpaused,
+	})
 	if err != nil {
-		t.Fatalf("ToggleSchedulePause (2nd) failed: %v", err)
+		t.Fatalf("UpdateSchedule (unpause) failed: %v", err)
 	}
 
 	if schedule.Paused {
-		t.Error("expected schedule to be unpaused after second toggle")
+		t.Error("expected schedule to be unpaused after update")
+	}
+
+	// Update cron expression
+	newCron := "0 3 * * *"
+	schedule, err = client.UpdateSchedule(context.Background(), "my-schedule", UpdateScheduleRequest{
+		Schedule: &newCron,
+	})
+	if err != nil {
+		t.Fatalf("UpdateSchedule (cron) failed: %v", err)
+	}
+
+	if schedule.Schedule != "0 3 * * *" {
+		t.Errorf("expected cron '0 3 * * *', got '%s'", schedule.Schedule)
 	}
 }
 

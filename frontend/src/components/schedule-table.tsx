@@ -2,7 +2,7 @@
 
 import { DataTable } from "mantine-datatable";
 import { ActionIcon, Group, Tooltip, Badge } from "@mantine/core";
-import { IconTrash, IconPlayerPause, IconPlayerPlay } from "@tabler/icons-react";
+import { IconTrash, IconPlayerPause, IconPlayerPlay, IconEdit } from "@tabler/icons-react";
 import { StatusBadge } from "./status-badge";
 import { formatDate } from "@/lib/utils";
 import type { Schedule } from "@/lib/types";
@@ -11,7 +11,8 @@ import { useAuthStore, hasRole } from "@/lib/auth";
 interface ScheduleTableProps {
   schedules: Schedule[];
   loading: boolean;
-  onTogglePause: (name: string) => void;
+  onTogglePause: (name: string, currentPaused: boolean) => void;
+  onEdit: (name: string) => void;
   onDelete: (name: string) => void;
   page: number;
   onPageChange: (page: number) => void;
@@ -24,6 +25,7 @@ export function ScheduleTable({
   schedules,
   loading,
   onTogglePause,
+  onEdit,
   onDelete,
   page,
   onPageChange,
@@ -91,13 +93,22 @@ export function ScheduleTable({
                   <ActionIcon
                     variant="subtle"
                     color={schedule.paused ? "green" : "yellow"}
-                    onClick={() => onTogglePause(schedule.name)}
+                    onClick={() => onTogglePause(schedule.name, schedule.paused)}
                   >
                     {schedule.paused ? (
                       <IconPlayerPlay size={16} />
                     ) : (
                       <IconPlayerPause size={16} />
                     )}
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label="Edit">
+                  <ActionIcon
+                    variant="subtle"
+                    color="blue"
+                    onClick={() => onEdit(schedule.name)}
+                  >
+                    <IconEdit size={16} />
                   </ActionIcon>
                 </Tooltip>
                 <Tooltip label="Delete">

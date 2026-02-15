@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listRestores, getRestore, createRestore, listSharedBackups, createCrossClusterRestore } from "@/lib/api";
+import { listRestores, getRestore, createRestore, deleteRestore, listSharedBackups, createCrossClusterRestore } from "@/lib/api";
 import type { CreateRestoreRequest, CrossClusterRestoreRequest } from "@/lib/types";
 import { useClusterStore } from "@/lib/cluster";
 
@@ -34,6 +34,18 @@ export function useCreateRestore() {
   return useMutation({
     mutationFn: (data: CreateRestoreRequest) =>
       createRestore(data, selectedClusterId || undefined),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["restores", selectedClusterId] }),
+  });
+}
+
+export function useDeleteRestore() {
+  const queryClient = useQueryClient();
+  const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
+
+  return useMutation({
+    mutationFn: (name: string) =>
+      deleteRestore(name, selectedClusterId || undefined),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["restores", selectedClusterId] }),
   });

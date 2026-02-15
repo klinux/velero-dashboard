@@ -51,6 +51,12 @@ type UpdateClusterRequest struct {
 	Kubeconfig   *string `json:"kubeconfig,omitempty"`
 	Namespace    *string `json:"namespace,omitempty"`
 	SetAsDefault *bool   `json:"setAsDefault,omitempty"`
+
+	// Token-based auth (alternative to kubeconfig)
+	APIServer       *string `json:"apiServer,omitempty"`
+	Token           *string `json:"token,omitempty"`
+	CACert          *string `json:"caCert,omitempty"`
+	InsecureSkipTLS *bool   `json:"insecureSkipTLS,omitempty"`
 }
 
 // ToSummary converts Cluster to ClusterSummary (without sensitive data)

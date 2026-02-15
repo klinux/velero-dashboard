@@ -84,7 +84,7 @@ func (h *ScheduleHandler) Create(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(schedule)
 }
 
-func (h *ScheduleHandler) TogglePause(c *fiber.Ctx) error {
+func (h *ScheduleHandler) Update(c *fiber.Ctx) error {
 	client, err := h.getClient(c)
 	if err != nil {
 		h.logger.Error("Failed to get cluster client", zap.Error(err))
@@ -94,9 +94,14 @@ func (h *ScheduleHandler) TogglePause(c *fiber.Ctx) error {
 	}
 
 	name := c.Params("name")
-	schedule, err := client.ToggleSchedulePause(c.Context(), name)
+	var req k8s.UpdateScheduleRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	schedule, err := client.UpdateSchedule(c.Context(), name, req)
 	if err != nil {
-		h.logger.Error("Failed to toggle schedule pause", zap.String("name", name), zap.Error(err))
+		h.logger.Error("Failed to update schedule", zap.String("name", name), zap.Error(err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(schedule)

@@ -3,13 +3,15 @@
 import { Drawer, ScrollArea, Text, Loader, Alert, TextInput, Stack, Group, Badge } from "@mantine/core";
 import { IconAlertCircle, IconSearch } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import { getBackupLogs } from "@/lib/api";
+import { getBackupLogs, getRestoreLogs } from "@/lib/api";
 import { useState, useMemo } from "react";
+import { useClusterStore } from "@/lib/cluster";
 
 interface LogViewerModalProps {
   opened: boolean;
   onClose: () => void;
-  backupName: string;
+  backupName?: string;
+  restoreName?: string;
 }
 
 function colorizeLogLine(line: string): React.ReactNode {
@@ -43,13 +45,19 @@ function colorizeLogLine(line: string): React.ReactNode {
   );
 }
 
-export function LogViewerModal({ opened, onClose, backupName }: LogViewerModalProps) {
+export function LogViewerModal({ opened, onClose, backupName, restoreName }: LogViewerModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const selectedClusterId = useClusterStore((state) => state.selectedClusterId);
+  const resourceName = backupName || restoreName || "";
+  const resourceType = backupName ? "Backup" : "Restore";
 
   const { data: logs, isLoading, error } = useQuery({
-    queryKey: ["backupLogs", backupName],
-    queryFn: () => getBackupLogs(backupName),
-    enabled: opened && !!backupName,
+    queryKey: [resourceType.toLowerCase() + "Logs", resourceName, selectedClusterId],
+    queryFn: () =>
+      backupName
+        ? getBackupLogs(backupName, selectedClusterId || undefined)
+        : getRestoreLogs(restoreName!, selectedClusterId || undefined),
+    enabled: opened && !!resourceName,
     retry: 1,
   });
 
@@ -72,7 +80,7 @@ export function LogViewerModal({ opened, onClose, backupName }: LogViewerModalPr
     <Drawer
       opened={opened}
       onClose={onClose}
-      title={`Backup Logs: ${backupName}`}
+      title={`${resourceType} Logs: ${resourceName}`}
       position="right"
       size="xl"
       styles={{
@@ -93,7 +101,7 @@ export function LogViewerModal({ opened, onClose, backupName }: LogViewerModalPr
           color="red"
           m="md"
         >
-          {error instanceof Error ? error.message : "Failed to load backup logs"}
+          {error instanceof Error ? error.message : "Failed to load logs"}
         </Alert>
       )}
 
@@ -102,7 +110,7 @@ export function LogViewerModal({ opened, onClose, backupName }: LogViewerModalPr
           <div style={{ padding: "12px", borderBottom: "1px solid var(--mantine-color-gray-3)" }}>
             <Group justify="space-between" mb="xs">
               <Text size="xs" c="dimmed">
-                Backup logs retrieved from storage
+                {resourceType} logs retrieved from storage
               </Text>
               <Badge variant="light" size="sm">
                 {matchCount} {searchQuery ? "matches" : "lines"}

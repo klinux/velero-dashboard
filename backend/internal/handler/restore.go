@@ -83,3 +83,38 @@ func (h *RestoreHandler) Create(c *fiber.Ctx) error {
 	}
 	return c.Status(fiber.StatusCreated).JSON(restore)
 }
+
+func (h *RestoreHandler) Delete(c *fiber.Ctx) error {
+	client, err := h.getClient(c)
+	if err != nil {
+		h.logger.Error("Failed to get cluster client", zap.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Cluster not found or not connected",
+		})
+	}
+
+	name := c.Params("name")
+	if err := client.DeleteRestore(c.Context(), name); err != nil {
+		h.logger.Error("Failed to delete restore", zap.String("name", name), zap.Error(err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(fiber.Map{"message": "restore deleted"})
+}
+
+func (h *RestoreHandler) Logs(c *fiber.Ctx) error {
+	client, err := h.getClient(c)
+	if err != nil {
+		h.logger.Error("Failed to get cluster client", zap.Error(err))
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Cluster not found or not connected",
+		})
+	}
+
+	name := c.Params("name")
+	logs, err := client.GetRestoreLogs(c.Context(), name)
+	if err != nil {
+		h.logger.Error("Failed to get restore logs", zap.String("name", name), zap.Error(err))
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.SendString(logs)
+}

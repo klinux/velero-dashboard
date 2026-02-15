@@ -134,6 +134,19 @@ export interface CreateScheduleRequest {
   paused?: boolean;
 }
 
+export interface UpdateScheduleRequest {
+  schedule?: string;
+  paused?: boolean;
+  includedNamespaces?: string[];
+  excludedNamespaces?: string[];
+  includedResources?: string[];
+  excludedResources?: string[];
+  storageLocation?: string;
+  ttl?: string;
+  snapshotVolumes?: boolean;
+  defaultVolumesToFsBackup?: boolean;
+}
+
 export interface CreateBackupStorageLocationRequest {
   name: string;
   provider: string; // aws, gcp, azure, velero.io/aws
@@ -204,6 +217,11 @@ export interface UpdateClusterRequest {
   kubeconfig?: string;
   namespace?: string;
   setAsDefault?: boolean;
+  // Token-based auth (alternative to kubeconfig)
+  apiServer?: string;
+  token?: string;
+  caCert?: string;
+  insecureSkipTLS?: boolean;
 }
 
 export interface WSEvent {

@@ -150,6 +150,46 @@ func (h *ClusterHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 
+	// If token-based auth provided, convert to kubeconfig
+	if req.APIServer != nil && req.Token != nil {
+		// Get cluster name for kubeconfig generation
+		clusterName := ""
+		if req.Name != nil {
+			clusterName = *req.Name
+		} else {
+			// Use existing name
+			existingCluster, err := h.manager.GetStore().Get(c.Context(), id)
+			if err != nil {
+				return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+					"error": "Cluster not found",
+				})
+			}
+			clusterName = existingCluster.Name
+		}
+
+		caCert := ""
+		if req.CACert != nil {
+			caCert = *req.CACert
+		}
+		insecureSkipTLS := false
+		if req.InsecureSkipTLS != nil {
+			insecureSkipTLS = *req.InsecureSkipTLS
+		}
+
+		kubeconfig := cluster.TokenToKubeconfig(
+			clusterName,
+			*req.APIServer,
+			*req.Token,
+			caCert,
+			insecureSkipTLS,
+		)
+		req.Kubeconfig = &kubeconfig
+
+		h.logger.Info("Converted token-based auth to kubeconfig for update",
+			zap.String("id", id),
+			zap.String("apiServer", *req.APIServer))
+	}
+
 	// Update in store
 	if err := h.manager.GetStore().Update(c.Context(), id, req); err != nil {
 		h.logger.Error("Failed to update cluster",

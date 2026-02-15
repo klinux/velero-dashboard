@@ -171,6 +171,7 @@ func main() {
 	api.Get("/backups/:name/logs", handlers.Backup.Logs)
 
 	api.Get("/restores", handlers.Restore.List)
+	api.Get("/restores/:name/logs", handlers.Restore.Logs)
 	api.Get("/restores/:name", handlers.Restore.Get)
 
 	api.Get("/schedules", handlers.Schedule.List)
@@ -185,9 +186,10 @@ func main() {
 	operator.Post("/backups", handlers.Backup.Create)
 	operator.Delete("/backups/:name", handlers.Backup.Delete)
 	operator.Post("/restores", handlers.Restore.Create)
+	operator.Delete("/restores/:name", handlers.Restore.Delete)
 	operator.Post("/restores/cross-cluster", handlers.CrossCluster.CreateCrossClusterRestore)
 	operator.Post("/schedules", handlers.Schedule.Create)
-	operator.Patch("/schedules/:name", handlers.Schedule.TogglePause)
+	operator.Patch("/schedules/:name", handlers.Schedule.Update)
 	operator.Delete("/schedules/:name", handlers.Schedule.Delete)
 
 	// Admin-level routes (admin only)
