@@ -122,10 +122,11 @@ jobs:
             mkdir -p gh-pages
             cd gh-pages
             git init -b gh-pages
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
             git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-            # Create an empty initial commit
             git commit --allow-empty -m "Initialize gh-pages for Helm chart repo"
-            git push origin gh-pages
+            git push -u origin gh-pages
           fi
 
       - name: Update Helm repo index
