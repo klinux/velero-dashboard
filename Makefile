@@ -1,51 +1,111 @@
-IMG="klinux/velero-dashboard"
-VERSION="0.0.1"
-DOCKER_DIR="utils/docker"
-DEV="velero-dashboard"
-IP=192.168.0.146
-KUBECONFIG="${PWD}/utils/config"
-MINIKUBE_HOME="/tmp/minikube"
-KUBERNETES_VERSION="v1.19.0"
+# =============================================================================
+# Velero Dashboard - Makefile
+# =============================================================================
 
+REGISTRY := docker.io
+DOCKER_USER := klinux
+BACKEND_IMAGE := $(REGISTRY)/$(DOCKER_USER)/velero-dashboard-backend
+FRONTEND_IMAGE := $(REGISTRY)/$(DOCKER_USER)/velero-dashboard-frontend
+
+VERSION ?= latest
+GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
+DOCKER_BUILD_OPTS := --platform linux/amd64
+
+HELM_CHART := helm/velero-dashboard
+HELM_RELEASE := velero-dashboard
+HELM_NAMESPACE ?= velero
+
+# =============================================================================
+# Help
+# =============================================================================
 .PHONY: help
-help:
-	 @awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / { printf "\033[36m%-30s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
-.DEFAULT_GOAL := help
+help: ## Show this help
+	@echo "Velero Dashboard Build System"
+	@echo ""
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-# TASKS
-image: ## Build and push image
-	docker build -t ${IMG}:${VERSION} -f ${DOCKER_DIR}/Dockerfile .
-	docker build -t ${IMG}:latest -f ${DOCKER_DIR}/Dockerfile .
-	docker push ${IMG}:${VERSION}
-	docker push ${IMG}:latest
+# =============================================================================
+# Build
+# =============================================================================
+.PHONY: build build-backend build-frontend
+build: build-backend build-frontend ## Build all Docker images
 
-dev: ## Run in development mode
-	docker build -t ${DEV} --target dev -f ${DOCKER_DIR}/Dockerfile-dev .
-	docker-compose -f ${DOCKER_DIR}/docker-compose.yaml up
+build-backend: ## Build backend Docker image
+	docker build $(DOCKER_BUILD_OPTS) \
+		-t $(BACKEND_IMAGE):$(VERSION) \
+		-t $(BACKEND_IMAGE):$(GIT_COMMIT) \
+		-f backend/Dockerfile \
+		backend/
 
-stop: ## Stop development mode
-	docker-compose -f ${DOCKER_DIR}/docker-compose.yaml down
+build-frontend: ## Build frontend Docker image
+	docker build $(DOCKER_BUILD_OPTS) \
+		-t $(FRONTEND_IMAGE):$(VERSION) \
+		-t $(FRONTEND_IMAGE):$(GIT_COMMIT) \
+		-f frontend/Dockerfile \
+		frontend/
 
-kube: ## Depploy velero dashboard
-	kubectl apply -f utils/kubernetes -n velero
+# =============================================================================
+# Push
+# =============================================================================
+.PHONY: push push-backend push-frontend
+push: push-backend push-frontend ## Push all images
 
-minikube: ## Run minikube cluster
-	export KUBECONFIG=${KUBECONFIG}; export MINIKUBE_HOME=${MINIKUBE_HOME}; minikube start --cni=bridge --kubernetes-version=${KUBERNETES_VERSION}
-	docker stop minio || true && docker rm -f minio || true
-	docker run --name minio -d -p 9000:9000 -e "MINIO_ACCESS_KEY=minioadmin" -e "MINIO_SECRET_KEY=minioadmin" -v /tmp/data:/data minio/minio server /data
-	sleep 5
-	docker run --entrypoint="" minio/mc /bin/sh -c "/usr/bin/mc config host add server http://${IP}:9000 minioadmin minioadmin; /usr/bin/mc mb server/velero; exit 0;"
-	velero install --provider aws --use-restic --plugins velero/velero-plugin-for-aws --bucket velero --secret-file ./utils/minio.credentials --backup-location-config region=minio,s3ForcePathStyle=true,s3Url=http://${IP}:9000 --kubeconfig ${KUBECONFIG}
-	export KUBECONFIG=${KUBECONFIG}; kubectl create ns namespace1 || true
-	export KUBECONFIG=${KUBECONFIG}; kubectl create ns namespace2 || true
-	velero backup create namespace1 --include-namespaces napespace1 --kubeconfig ${KUBECONFIG} || true
-	velero backup create namespace2 --include-namespaces napespace2 --kubeconfig ${KUBECONFIG} || true
-	# sed -i -e 's/[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/${IP}/g' utils/config || true
+push-backend: ## Push backend image
+	docker push $(BACKEND_IMAGE):$(VERSION)
+	docker push $(BACKEND_IMAGE):$(GIT_COMMIT)
 
-ministop: ## Stop minikube
-	export KUBECONFIG=${KUBECONFIG}; export MINIKUBE_HOME=${MINIKUBE_HOME}; minikube stop
-	docker stop minio || true && docker rm -f minio || true
+push-frontend: ## Push frontend image
+	docker push $(FRONTEND_IMAGE):$(VERSION)
+	docker push $(FRONTEND_IMAGE):$(GIT_COMMIT)
 
-miniclean: ## Clean minikube installation
-	export KUBECONFIG=${KUBECONFIG}; export MINIKUBE_HOME=${MINIKUBE_HOME}; minikube stop
-	export KUBECONFIG=${KUBECONFIG}; export MINIKUBE_HOME=${MINIKUBE_HOME}; minikube delete
+# =============================================================================
+# Development
+# =============================================================================
+.PHONY: dev dev-backend dev-frontend
+dev: ## Start both backend and frontend for development
+	docker-compose up -d
+
+dev-backend: ## Run backend locally
+	cd backend && go run ./cmd/server
+
+dev-frontend: ## Run frontend locally
+	cd frontend && npm run dev
+
+# =============================================================================
+# Test
+# =============================================================================
+.PHONY: test test-backend test-frontend
+test: test-backend test-frontend ## Run all tests
+
+test-backend: ## Run Go tests
+	cd backend && go test ./... -v
+
+test-frontend: ## Run frontend tests
+	cd frontend && npm run test:run
+
+# =============================================================================
+# Helm
+# =============================================================================
+.PHONY: helm-lint helm-template helm-install helm-upgrade
+helm-lint: ## Lint Helm chart
+	helm lint $(HELM_CHART)
+
+helm-template: ## Generate Helm templates
+	helm template $(HELM_RELEASE) $(HELM_CHART) --namespace=$(HELM_NAMESPACE)
+
+helm-install: ## Install Helm chart (dry-run by default)
+	helm install $(HELM_RELEASE) $(HELM_CHART) --namespace=$(HELM_NAMESPACE) --dry-run
+
+helm-upgrade: ## Upgrade Helm chart
+	helm upgrade $(HELM_RELEASE) $(HELM_CHART) --namespace=$(HELM_NAMESPACE)
+
+# =============================================================================
+# Combined
+# =============================================================================
+.PHONY: all clean
+all: build push ## Build and push all images
+
+clean: ## Remove local images
+	-docker rmi $(BACKEND_IMAGE):$(VERSION) 2>/dev/null
+	-docker rmi $(FRONTEND_IMAGE):$(VERSION) 2>/dev/null

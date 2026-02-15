@@ -1,0 +1,14 @@
+apiVersion: v2
+name: velero-dashboard
+description: Web dashboard for managing Velero backups in Kubernetes
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - velero
+  - backup
+  - kubernetes
+  - dashboard
+maintainers:
+  - name: Kleber Rocha
+    url: https://github.com/klinux

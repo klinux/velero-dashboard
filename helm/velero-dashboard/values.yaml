@@ -1,0 +1,61 @@
+replicaCount: 1
+
+backend:
+  image:
+    repository: klinux/velero-dashboard-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 8080
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+frontend:
+  image:
+    repository: klinux/velero-dashboard-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 3000
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+velero:
+  namespace: velero
+
+serviceAccount:
+  create: true
+  name: velero-dashboard
+
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  host: velero.example.com
+  tls: []
+
+env:
+  SERVER_ALLOWED_ORIGINS: "http://localhost:3000"
+
+auth:
+  mode: "none"           # none, basic, oidc
+  jwtSecret: ""          # auto-generated if empty
+  jwtExpiration: "24h"
+  users: ""              # basic mode: "user:bcrypt_hash:role,..."
+  oidc:
+    issuer: ""
+    clientId: ""
+    clientSecret: ""
+    redirectUrl: ""
+    roleClaim: "groups"
+    adminGroups: "velero-admins"
+    operatorGroups: "velero-operators"
+    defaultRole: "viewer"

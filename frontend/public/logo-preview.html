@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Velero Logo Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+      color: white;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 2.5em;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    .subtitle {
+      text-align: center;
+      margin-bottom: 40px;
+      opacity: 0.9;
+      font-size: 1.1em;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    .card h2 {
+      color: #333;
+      font-size: 1.2em;
+      margin: 0;
+    }
+    .logo-container {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 12px;
+      padding: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 150px;
+      width: 100%;
+    }
+    .dark-bg {
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    }
+    .header-demo {
+      background: white;
+      border-radius: 12px;
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      width: 100%;
+    }
+    .header-demo h3 {
+      color: #333;
+      font-size: 1.3em;
+      font-weight: 700;
+      margin: 0;
+    }
+    .size-label {
+      color: #666;
+      font-size: 0.9em;
+      font-weight: 500;
+    }
+    .features {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      margin-top: 20px;
+    }
+    .features h2 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .features ul {
+      color: #666;
+      line-height: 1.8;
+      padding-left: 20px;
+    }
+    .features li {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⛵ Velero Dashboard - Novo Logo</h1>
+    <p class="subtitle">Ícone customizado com tema de vela de barco</p>
+
+    <div class="grid">
+      <!-- Size variations -->
+      <div class="card">
+        <h2>Tamanho Grande (120px)</h2>
+        <div class="logo-container">
+          <svg width="120" height="120" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="sail-gradient-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#5c7cfa" />
+                <stop offset="100%" stop-color="#4dabf7" />
+              </linearGradient>
+              <linearGradient id="wave-gradient-1" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#22b8cf" />
+                <stop offset="100%" stop-color="#4dabf7" />
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="45" fill="url(#sail-gradient-1)" opacity="0.08" />
+            <path d="M48 25 L48 62 L72 62 Z" fill="url(#sail-gradient-1)" opacity="0.85" />
+            <path d="M48 30 L48 55 L32 55 Z" fill="url(#sail-gradient-1)" opacity="0.6" />
+            <line x1="48" y1="25" x2="48" y2="68" stroke="url(#sail-gradient-1)" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M35 68 L61 68 Q64 68 62 71 L34 71 Q32 68 35 68 Z" fill="url(#sail-gradient-1)" opacity="0.9" />
+            <path d="M20 78 Q25 75 30 78 T40 78 T50 78 T60 78 T70 78 T80 78" stroke="url(#wave-gradient-1)" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6" />
+            <path d="M15 85 Q20 82 25 85 T35 85 T45 85 T55 85 T65 85 T75 85 T85 85" stroke="url(#wave-gradient-1)" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.4" />
+          </svg>
+        </div>
+        <span class="size-label">Ideal para splash screens</span>
+      </div>
+
+      <div class="card">
+        <h2>Tamanho Médio (64px)</h2>
+        <div class="logo-container">
+          <svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="sail-gradient-2" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#5c7cfa" />
+                <stop offset="100%" stop-color="#4dabf7" />
+              </linearGradient>
+              <linearGradient id="wave-gradient-2" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#22b8cf" />
+                <stop offset="100%" stop-color="#4dabf7" />
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="45" fill="url(#sail-gradient-2)" opacity="0.08" />
+            <path d="M48 25 L48 62 L72 62 Z" fill="url(#sail-gradient-2)" opacity="0.85" />
+            <path d="M48 30 L48 55 L32 55 Z" fill="url(#sail-gradient-2)" opacity="0.6" />
+            <line x1="48" y1="25" x2="48" y2="68" stroke="url(#sail-gradient-2)" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M35 68 L61 68 Q64 68 62 71 L34 71 Q32 68 35 68 Z" fill="url(#sail-gradient-2)" opacity="0.9" />
+            <path d="M20 78 Q25 75 30 78 T40 78 T50 78 T60 78 T70 78 T80 78" stroke="url(#wave-gradient-2)" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6" />
+            <path d="M15 85 Q20 82 25 85 T35 85 T45 85 T55 85 T65 85 T75 85 T85 85" stroke="url(#wave-gradient-2)" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.4" />
+          </svg>
+        </div>
+        <span class="size-label">Ícone de aplicativo</span>
+      </div>
+
+      <div class="card">
+        <h2>Tamanho Pequeno (32px)</h2>
+        <div class="logo-container">
+          <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="sail-gradient-3" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#5c7cfa" />
+                <stop offset="100%" stop-color="#4dabf7" />
+              </linearGradient>
+              <linearGradient id="wave-gradient-3" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#22b8cf" />
+                <stop offset="100%" stop-color="#4dabf7" />
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="45" fill="url(#sail-gradient-3)" opacity="0.08" />
+            <path d="M48 25 L48 62 L72 62 Z" fill="url(#sail-gradient-3)" opacity="0.85" />
+            <path d="M48 30 L48 55 L32 55 Z" fill="url(#sail-gradient-3)" opacity="0.6" />
+            <line x1="48" y1="25" x2="48" y2="68" stroke="url(#sail-gradient-3)" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M35 68 L61 68 Q64 68 62 71 L34 71 Q32 68 35 68 Z" fill="url(#sail-gradient-3)" opacity="0.9" />
+            <path d="M20 78 Q25 75 30 78 T40 78 T50 78 T60 78 T70 78 T80 78" stroke="url(#wave-gradient-3)" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6" />
+            <path d="M15 85 Q20 82 25 85 T35 85 T45 85 T55 85 T65 85 T75 85 T85 85" stroke="url(#wave-gradient-3)" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.4" />
+          </svg>
+        </div>
+        <span class="size-label">Header do dashboard (usado na app)</span>
+      </div>
+
+      <div class="card">
+        <h2>Fundo Escuro</h2>
+        <div class="logo-container dark-bg">
+          <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="sail-gradient-4" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#748ffc" />
+                <stop offset="100%" stop-color="#74c0fc" />
+              </linearGradient>
+              <linearGradient id="wave-gradient-4" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#3bc9db" />
+                <stop offset="100%" stop-color="#74c0fc" />
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="45" fill="url(#sail-gradient-4)" opacity="0.15" />
+            <path d="M48 25 L48 62 L72 62 Z" fill="url(#sail-gradient-4)" opacity="0.95" />
+            <path d="M48 30 L48 55 L32 55 Z" fill="url(#sail-gradient-4)" opacity="0.7" />
+            <line x1="48" y1="25" x2="48" y2="68" stroke="url(#sail-gradient-4)" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M35 68 L61 68 Q64 68 62 71 L34 71 Q32 68 35 68 Z" fill="url(#sail-gradient-4)" opacity="1" />
+            <path d="M20 78 Q25 75 30 78 T40 78 T50 78 T60 78 T70 78 T80 78" stroke="url(#wave-gradient-4)" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.7" />
+            <path d="M15 85 Q20 82 25 85 T35 85 T45 85 T55 85 T65 85 T75 85 T85 85" stroke="url(#wave-gradient-4)" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.5" />
+          </svg>
+        </div>
+        <span class="size-label">Modo escuro</span>
+      </div>
+
+      <div class="card">
+        <h2>Simulação de Header</h2>
+        <div class="header-demo">
+          <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="sail-gradient-5" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#5c7cfa" />
+                <stop offset="100%" stop-color="#4dabf7" />
+              </linearGradient>
+              <linearGradient id="wave-gradient-5" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#22b8cf" />
+                <stop offset="100%" stop-color="#4dabf7" />
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="45" fill="url(#sail-gradient-5)" opacity="0.08" />
+            <path d="M48 25 L48 62 L72 62 Z" fill="url(#sail-gradient-5)" opacity="0.85" />
+            <path d="M48 30 L48 55 L32 55 Z" fill="url(#sail-gradient-5)" opacity="0.6" />
+            <line x1="48" y1="25" x2="48" y2="68" stroke="url(#sail-gradient-5)" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M35 68 L61 68 Q64 68 62 71 L34 71 Q32 68 35 68 Z" fill="url(#sail-gradient-5)" opacity="0.9" />
+            <path d="M20 78 Q25 75 30 78 T40 78 T50 78 T60 78 T70 78 T80 78" stroke="url(#wave-gradient-5)" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6" />
+            <path d="M15 85 Q20 82 25 85 T35 85 T45 85 T55 85 T65 85 T75 85 T85 85" stroke="url(#wave-gradient-5)" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.4" />
+          </svg>
+          <h3>Velero</h3>
+        </div>
+        <span class="size-label">Como aparece no dashboard</span>
+      </div>
+
+      <div class="card">
+        <h2>Favicon (16px)</h2>
+        <div class="logo-container">
+          <svg width="16" height="16" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="sail-gradient-6" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#5c7cfa" />
+                <stop offset="100%" stop-color="#4dabf7" />
+              </linearGradient>
+              <linearGradient id="wave-gradient-6" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#22b8cf" />
+                <stop offset="100%" stop-color="#4dabf7" />
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="45" fill="url(#sail-gradient-6)" opacity="0.08" />
+            <path d="M48 25 L48 62 L72 62 Z" fill="url(#sail-gradient-6)" opacity="0.85" />
+            <path d="M48 30 L48 55 L32 55 Z" fill="url(#sail-gradient-6)" opacity="0.6" />
+            <line x1="48" y1="25" x2="48" y2="68" stroke="url(#sail-gradient-6)" stroke-width="2.5" stroke-linecap="round" />
+            <path d="M35 68 L61 68 Q64 68 62 71 L34 71 Q32 68 35 68 Z" fill="url(#sail-gradient-6)" opacity="0.9" />
+            <path d="M20 78 Q25 75 30 78 T40 78 T50 78 T60 78 T70 78 T80 78" stroke="url(#wave-gradient-6)" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.6" />
+            <path d="M15 85 Q20 82 25 85 T35 85 T45 85 T55 85 T65 85 T75 85 T85 85" stroke="url(#wave-gradient-6)" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.4" />
+          </svg>
+        </div>
+        <span class="size-label">Aba do navegador</span>
+      </div>
+    </div>
+
+    <div class="features">
+      <h2>✨ Características do Novo Logo</h2>
+      <ul>
+        <li><strong>Vela Principal (triângulo grande):</strong> Representa a vela mestre do veleiro, simbolizando força e direção</li>
+        <li><strong>Vela Secundária (jib):</strong> Vela menor frontal, adiciona dinamismo e movimento</li>
+        <li><strong>Mastro:</strong> Estrutura central que conecta tudo, representa estabilidade</li>
+        <li><strong>Casco do Barco:</strong> Base sólida com formato curvo característico</li>
+        <li><strong>Ondas Estilizadas:</strong> Duas camadas de ondas suaves representando o mar/navegação</li>
+        <li><strong>Gradientes Azuis:</strong> Mantém a paleta de cores do Mantine (indigo → blue → cyan)</li>
+        <li><strong>Design Minimalista:</strong> Funciona bem em todos os tamanhos (16px a 120px)</li>
+        <li><strong>Tema Náutico:</strong> Conexão direta com "Velero" (veleiro em espanhol)</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

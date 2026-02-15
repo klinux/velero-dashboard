@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "velero-dashboard.fullname" . }}-backend
+  namespace: {{ .Values.velero.namespace }}
+  labels:
+    {{- include "velero-dashboard.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.backend.port }}
+      targetPort: {{ .Values.backend.port }}
+      protocol: TCP
+  selector:
+    {{- include "velero-dashboard.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
