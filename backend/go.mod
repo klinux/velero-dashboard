@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/spf13/viper v1.19.0
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.48.0
 	golang.org/x/oauth2 v0.35.0
 	k8s.io/apimachinery v0.35.1
