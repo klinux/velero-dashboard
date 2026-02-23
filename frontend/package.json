@@ -20,7 +20,7 @@
     "@mantine/modals": "^8.3.14",
     "@mantine/notifications": "^8.3.14",
     "@mantine/spotlight": "^8.3.14",
-    "@tabler/icons-react": "^3.36.1",
+    "@tabler/icons-react": "^3.37.1",
     "@tanstack/react-query": "^5.90.21",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.19",
