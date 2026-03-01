@@ -6,7 +6,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/gofiber/adaptor/v2 v2.2.1
 	github.com/gofiber/contrib/websocket v1.3.4
-	github.com/gofiber/fiber/v2 v2.52.11
+	github.com/gofiber/fiber/v2 v2.52.12
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/mattn/go-sqlite3 v1.14.34
