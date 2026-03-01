@@ -12,7 +12,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@mantine/charts": "^8.3.14",
+    "@mantine/charts": "^8.3.15",
     "@mantine/core": "^8.3.14",
     "@mantine/dates": "^8.3.14",
     "@mantine/form": "^8.3.14",
